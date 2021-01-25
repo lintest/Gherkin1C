@@ -31,6 +31,7 @@ set(GherkinReflex_SRCS
     RE-flex/unicode/block_scripts.cpp
     RE-flex/unicode/language_scripts.cpp
     RE-flex/unicode/letter_scripts.cpp
+    src/console.cpp
     src/gherkin.cpp
     src/gherkin.h
     src/json.hpp

@@ -7,15 +7,31 @@
 
 using JSON = nlohmann::json;
 
+namespace Gherkin {
+    enum TokenType {
+        Operator,
+        Comment,
+        Number,
+        Colon,
+        Param,
+        Date,
+        Tag,
+        Symbol
+    };
+}
+
 class GherkinLexer;
 
 class GherkinToken {
+private:
+  std::string type2str() const;
 public:
-  std::string type;
+  Gherkin::TokenType type;
   std::string text;
   size_t columno;
 public:
-  GherkinToken(const std::string& type, GherkinLexer& l);
+  GherkinToken(Gherkin::TokenType type, GherkinLexer& l);
+  operator JSON() const;
 };
 
 #endif//GHERKIN_H

@@ -6,7 +6,7 @@
 private:
   std::vector<std::vector<GherkinToken>> lines{{}};
 public:
-  void push(const std::string& type) {
+  void push(Gherkin::TokenType type) {
     lines.back().push_back( {type, *this} );
   }
   void next() {
@@ -17,10 +17,7 @@ public:
     for (auto& line : lines) {
       JSON js;
       for (auto& token : line) {
-        JSON j;
-        j["type"] = token.type;
-        j["text"] = token.text;
-        js.push_back(j);
+        js.push_back(token);
       }
       json.push_back(js);
     }
@@ -41,37 +38,14 @@ colon         [:]
 
 %%
 
-{new_line}   { std::wcout << lineno() << "================\n"; next(); }
+{new_line}   { next(); }
 {space}      // ignore
-{colon}      { std::wcout << "Colon: " << text() << "\n"; push("colon"); }
-{operator}   { std::wcout << "Text: " << text() << "\n"; push("operator"); }
-{date}       { std::wcout << "Date: " << text() << "\n"; push("date"); }
-{param}      { std::wcout << "Param: " << text() << "\n"; push("param"); }
-{number}     { std::wcout << "Number: " << text() << "\n"; push("number"); }
-{comment}    { std::wcout << "Comment: " << text() << "\n"; push("comment"); }
-.            { std::wcout << "Symbol: " << text() << "\n"; push("symbol"); }
+{colon}      { push(Gherkin::Colon); }
+{operator}   { push(Gherkin::Operator); }
+{date}       { push(Gherkin::Date); }
+{param}      { push(Gherkin::Param); }
+{number}     { push(Gherkin::Number); }
+{comment}    { push(Gherkin::Comment); }
+.            { push(Gherkin::Symbol); }
 
 %%
-
-int main(int argc, char **argv)
-{
-  reflex::Input input;
-  if (argc > 1) {
-    input = fopen(argv[1], "r");
-    if (input.file() == NULL) {
-      perror("Cannot open file for reading");
-      exit(EXIT_FAILURE);
-    }
-  } else {
-    input = stdin;
-  }
-
-  GherkinLexer lexer(input);
-  lexer.lex();
-  std::cout << lexer.dump();
-
-  if (input.file() != stdin)
-    fclose(input.file());
-
-  return 0;
-}
