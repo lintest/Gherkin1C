@@ -1,5 +1,6 @@
 ﻿#include "gherkin.h"
 #include "gherkin.lex.h"
+#include <reflex/matcher.h>
 
 std::vector<GherkinKeword> GherkinProvider::keywords;
 
@@ -18,16 +19,23 @@ void GherkinProvider::setKeywords(const std::string& text)
 			}
 		}
 	}
-}
-
-void GherkinProvider::init() {
-	std::string json = R"({"en": {"simple": ["Then", "And", "Else"]}})";
-	setKeywords(json);
+	std::sort(keywords.begin(), keywords.end(),
+		[](const GherkinKeword& a, const GherkinKeword& b) -> bool { 
+			return a.words.size() > b.words.size();
+		}
+	);
 }
 
 GherkinKeword::GherkinKeword(const std::string& lang, const std::string& type, const std::string& word)
 	: lang(lang), type(type)
 {
+	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
+	static const reflex::Pattern pattern(regex);
+	auto matcher = reflex::Matcher(pattern, word);
+	while (matcher.find() != 0) {
+		words.push_back(matcher.wstr());
+	}
+	text = word;
 }
 
 GherkinToken::GherkinToken(Gherkin::TokenType t, GherkinLexer& l)

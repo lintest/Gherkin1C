@@ -26,9 +26,11 @@ class GherkinLine;
 
 class GherkinKeword {
 private:
+    friend class GherkinProvider;
+    bool toplevel = false;
     std::string type;
     std::string lang;
-    bool toplevel = false;
+    std::string text;
     std::vector<std::wstring> words;
 public:
     GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);

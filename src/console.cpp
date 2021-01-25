@@ -1,4 +1,6 @@
 #include "gherkin.lex.h"
+#include <fstream>
+#include <string>
 
 int main(int argc, char **argv)
 {
@@ -13,7 +15,16 @@ int main(int argc, char **argv)
     input = stdin;
   }
 
-  GherkinProvider::init();
+  if (argc > 2) {
+    std::ifstream fstream;
+    fstream.open( argv[2]);
+    std::string json((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
+    GherkinProvider::setKeywords(json);
+  } else {
+  	std::string json = R"({"en": {"simple": ["Then", "And", "Scenario Template"]}})";
+    GherkinProvider::setKeywords(json);
+  }
+
   GherkinLexer lexer(input);
   lexer.lex();
   std::cout << lexer.dump();
