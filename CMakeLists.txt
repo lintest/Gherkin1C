@@ -3,18 +3,20 @@ set(TARGET GherkinReflex)
 project(GherkinReflex)
 
 # Create target for the parser
-ADD_CUSTOM_TARGET(GherkinReflex_Parser echo Creating GherkinLexer)
+ADD_CUSTOM_TARGET(GherkinReflex_Lexer echo Creating GherkinLexer)
 
 if (WIN32)
     set(REFLEX_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/RE-flex/bin/win64/reflex.exe" CACHE PATH "Reflex executable")
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/RE-flex/include)
 endif(WIN32)
 
-add_custom_command(TARGET GherkinReflex_Parser
+add_custom_command(TARGET GherkinReflex_Lexer
     COMMAND ${REFLEX_EXECUTABLE} 
-    ARGS --unicode --lexer=GherkinLexer --header-file ${GherkinReflex_SOURCE_DIR}/src/gherkin.l
+    ARGS --unicode --lexer=GherkinLexer 
+        --outfile=gherkin.lex.cpp --header-file=gherkin.lex.h
+        ${GherkinReflex_SOURCE_DIR}/src/gherkin.l
     DEPENDS ${GherkinReflex_SOURCE_DIR}/src/gherkin.l
-    OUTPUTS lex.yy.cpp lex.yy.h
+    OUTPUTS gherkin.lex.cpp gherkin.lex.h
     VERBATIM
 )
 
@@ -31,17 +33,17 @@ set(GherkinReflex_SRCS
     RE-flex/unicode/block_scripts.cpp
     RE-flex/unicode/language_scripts.cpp
     RE-flex/unicode/letter_scripts.cpp
+    gherkin.lex.cpp
+    gherkin.lex.h
     src/console.cpp
     src/gherkin.cpp
     src/gherkin.h
     src/json.hpp
-    lex.yy.cpp
-    lex.yy.h
 )
 
 set_source_files_properties( 
-    lex.yy.cpp
-    lex.yy.h
+    gherkin.lex.cpp
+    gherkin.lex.h
     GENERATED
 )
 
@@ -49,4 +51,4 @@ set_source_files_properties(
 include_directories(${GherkinReflex_SOURCE_DIR}/src)
 include_directories(${GherkinReflex_BINARY_DIR})
 add_executable(${TARGET} ${GherkinReflex_SRCS})
-add_dependencies(${TARGET} GherkinReflex_Parser)
+add_dependencies(${TARGET} GherkinReflex_Lexer)

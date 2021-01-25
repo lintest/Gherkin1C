@@ -1,4 +1,4 @@
-#include "lex.yy.h"
+#include "gherkin.lex.h"
 
 int main(int argc, char **argv)
 {

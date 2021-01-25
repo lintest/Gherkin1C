@@ -1,7 +1,5 @@
 #include "gherkin.h"
-#include "lex.yy.h"
-
-using namespace std;
+#include "gherkin.lex.h"
 
 GherkinToken::GherkinToken(Gherkin::TokenType type, GherkinLexer& l)
     : type(type), text(l.text()), columno(l.columno()) {};
