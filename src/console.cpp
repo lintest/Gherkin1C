@@ -13,6 +13,7 @@ int main(int argc, char **argv)
     input = stdin;
   }
 
+  GherkinProvider::init();
   GherkinLexer lexer(input);
   lexer.lex();
   std::cout << lexer.dump();

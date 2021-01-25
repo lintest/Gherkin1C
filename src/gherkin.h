@@ -21,12 +21,33 @@ namespace Gherkin {
 }
 
 class GherkinLexer;
+class GherkinToken;
+class GherkinLine;
+
+class GherkinKeword {
+private:
+    std::string type;
+    std::string lang;
+    bool toplevel = false;
+    std::vector<std::wstring> words;
+public:
+    GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);
+};
+
+class GherkinProvider {
+private:
+    static std::vector<GherkinKeword> keywords;
+public:
+    static void setKeywords(const std::string &text);
+    static void init();
+};
 
 class GherkinToken {
 private:
   std::string type2str() const;
 public:
   Gherkin::TokenType type;
+  std::wstring wstr;
   std::string text;
   size_t columno;
 public:
