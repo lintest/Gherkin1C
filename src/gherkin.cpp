@@ -34,10 +34,12 @@ void GherkinLine::push(Gherkin::TokenType t, GherkinLexer& l)
 
 GherkinLine::operator JSON() const
 {
-    JSON json;
+    JSON json, js;
     for (auto& t : tokens) {
-        json.push_back(t);
+        js.push_back(t);
     }
+    json["text"] = text;
+    json["tokens"] = js;
     return json;
 }
 
@@ -49,4 +51,13 @@ void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
         current->text = l.matcher().line();
     }
     current->push(t, l);
+}
+
+GherkinDocument::operator JSON() const
+{
+    JSON json;
+    for (auto& line : lines) {
+        json.push_back(line);
+    }
+    return json;
 }
