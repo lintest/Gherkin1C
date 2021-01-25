@@ -1,31 +1,18 @@
 %top{
-  #include <vector>
-  #include <string>
-  #include "json.hpp"
-  using namespace std;
-  using JSON = nlohmann::json;
+  #include "gherkin.h"
 %}
 
 %class{
-class GherkinToken {
-public:
-  string type;
-  string text;
-  size_t columno;
-public:
-  GherkinToken(const string& type, Lexer& l)
-    : type(type), text(l.text()), columno(l.columno()) {}
-};
 private:
-  vector<vector<GherkinToken>> lines{{}};
+  std::vector<std::vector<GherkinToken>> lines{{}};
 public:
-  void push(const string& type) {
+  void push(const std::string& type) {
     lines.back().push_back( {type, *this} );
   }
   void next() {
     lines.push_back( {} );
   }
-  string dump() {
+  std::string dump() {
     JSON json;
     for (auto& line : lines) {
       JSON js;
@@ -79,7 +66,7 @@ int main(int argc, char **argv)
     input = stdin;
   }
 
-  Lexer lexer(input);
+  GherkinLexer lexer(input);
   lexer.lex();
   std::cout << lexer.dump();
 
