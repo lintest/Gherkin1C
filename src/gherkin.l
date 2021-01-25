@@ -20,18 +20,20 @@ public:
 %option fast nodefault unicode
 
 new_line      \r?\n
-operator      [\w]+
+operator      \w+
 number        -?(\\d*\\.)?\\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
 param         \"[^\"\n]*\"|'[^'\n]*'|<[^>\n]*>
 comment       #[^\n]*|\/\/[^\n]*
 space         \h+
-colon         [:]
+colon         :
+tag           @
 
 %%
 
 {new_line}   { next(); }
 {space}      // ignore
+{tag}        { push(Gherkin::Tag); }
 {colon}      { push(Gherkin::Colon); }
 {operator}   { push(Gherkin::Operator); }
 {date}       { push(Gherkin::Date); }

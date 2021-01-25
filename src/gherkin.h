@@ -34,12 +34,15 @@ private:
 	std::vector<std::wstring> words;
 public:
 	GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);
+	GherkinKeword* matchKeyword(const GherkinLine& line);
+	operator JSON() const;
 };
 
 class GherkinProvider {
 private:
 	static std::vector<GherkinKeword> keywords;
 public:
+	static GherkinKeword* matchKeyword(const GherkinLine& line);
 	static void setKeywords(const std::string& text);
 };
 
@@ -58,7 +61,9 @@ public:
 
 class GherkinLine {
 private:
+	friend class GherkinProvider;
 	friend class GherkinDocument;
+	friend class GherkinKeword;
 	std::vector<GherkinToken> tokens;
 	std::string text;
 public:
