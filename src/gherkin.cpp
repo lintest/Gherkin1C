@@ -20,7 +20,7 @@ void GherkinProvider::setKeywords(const std::string& text)
 		}
 	}
 	std::sort(keywords.begin(), keywords.end(),
-		[](const GherkinKeword& a, const GherkinKeword& b) -> bool { 
+		[](const GherkinKeword& a, const GherkinKeword& b) -> bool {
 			return a.words.size() > b.words.size();
 		}
 	);

@@ -8,16 +8,16 @@
 using JSON = nlohmann::json;
 
 namespace Gherkin {
-    enum TokenType {
-        Operator,
-        Comment,
-        Number,
-        Colon,
-        Param,
-        Date,
-        Tag,
-        Symbol
-    };
+	enum TokenType {
+		Operator,
+		Comment,
+		Number,
+		Colon,
+		Param,
+		Date,
+		Tag,
+		Symbol
+	};
 }
 
 class GherkinLexer;
@@ -26,58 +26,57 @@ class GherkinLine;
 
 class GherkinKeword {
 private:
-    friend class GherkinProvider;
-    bool toplevel = false;
-    std::string type;
-    std::string lang;
-    std::string text;
-    std::vector<std::wstring> words;
+	friend class GherkinProvider;
+	bool toplevel = false;
+	std::string type;
+	std::string lang;
+	std::string text;
+	std::vector<std::wstring> words;
 public:
-    GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);
+	GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);
 };
 
 class GherkinProvider {
 private:
-    static std::vector<GherkinKeword> keywords;
+	static std::vector<GherkinKeword> keywords;
 public:
-    static void setKeywords(const std::string &text);
-    static void init();
+	static void setKeywords(const std::string& text);
 };
 
 class GherkinToken {
 private:
-  std::string type2str() const;
+	std::string type2str() const;
 public:
-  Gherkin::TokenType type;
-  std::wstring wstr;
-  std::string text;
-  size_t columno;
+	Gherkin::TokenType type;
+	std::wstring wstr;
+	std::string text;
+	size_t columno;
 public:
-  GherkinToken(Gherkin::TokenType t, GherkinLexer& l);
-  operator JSON() const;
+	GherkinToken(Gherkin::TokenType t, GherkinLexer& l);
+	operator JSON() const;
 };
 
 class GherkinLine {
 private:
-  friend class GherkinDocument;
-  std::vector<GherkinToken> tokens;
-  std::string text;
+	friend class GherkinDocument;
+	std::vector<GherkinToken> tokens;
+	std::string text;
 public:
-  GherkinLine() {}
-  operator JSON() const;
-  void push(Gherkin::TokenType t, GherkinLexer& l);
+	GherkinLine() {}
+	operator JSON() const;
+	void push(Gherkin::TokenType t, GherkinLexer& l);
 };
 
 class GherkinDocument {
 private:
-  std::vector<GherkinLine> lines;
-  GherkinLine* current = nullptr;
-  std::string text;
+	std::vector<GherkinLine> lines;
+	GherkinLine* current = nullptr;
+	std::string text;
 public:
-  GherkinDocument() {}
-  operator JSON() const;
-  void next() { current = nullptr; }
-  void push(Gherkin::TokenType t, GherkinLexer& l);
+	GherkinDocument() {}
+	operator JSON() const;
+	void next() { current = nullptr; }
+	void push(Gherkin::TokenType t, GherkinLexer& l);
 };
 
 #endif//GHERKIN_H
