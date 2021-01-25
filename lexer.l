@@ -7,17 +7,17 @@
 %}
 
 %class{
-class Token {
+class GherkinToken {
 public:
   string type;
   string text;
   size_t columno;
 public:
-  Token(const string& type, Lexer& l)
+  GherkinToken(const string& type, Lexer& l)
     : type(type), text(l.text()), columno(l.columno()) {}
 };
 private:
-  vector<vector<Token>> lines{{}};
+  vector<vector<GherkinToken>> lines{{}};
 public:
   void push(const string& type) {
     lines.back().push_back( {type, *this} );
@@ -39,7 +39,7 @@ public:
     }
     return json.dump();
   }
- }
+}
 
 %option fast nodefault unicode
 
