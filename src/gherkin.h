@@ -30,8 +30,31 @@ public:
   std::string text;
   size_t columno;
 public:
-  GherkinToken(Gherkin::TokenType type, GherkinLexer& l);
+  GherkinToken(Gherkin::TokenType t, GherkinLexer& l);
   operator JSON() const;
+};
+
+class GherkinLine {
+private:
+  friend class GherkinDocument;
+  std::vector<GherkinToken> tokens;
+  std::string text;
+public:
+  GherkinLine() {}
+  operator JSON() const;
+  void push(Gherkin::TokenType t, GherkinLexer& l);
+};
+
+class GherkinDocument {
+private:
+  std::vector<GherkinLine> lines;
+  GherkinLine* current;
+  std::string text;
+public:
+  GherkinDocument() {}
+  operator JSON() const;
+  void next() { current = nullptr; }
+  void push(Gherkin::TokenType t, GherkinLexer& l);
 };
 
 #endif//GHERKIN_H

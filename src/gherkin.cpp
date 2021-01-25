@@ -1,8 +1,8 @@
 #include "gherkin.h"
 #include "gherkin.lex.h"
 
-GherkinToken::GherkinToken(Gherkin::TokenType type, GherkinLexer& l)
-    : type(type), text(l.text()), columno(l.columno()) {};
+GherkinToken::GherkinToken(Gherkin::TokenType t, GherkinLexer& l)
+    : type(t), text(l.text()), columno(l.columno()) {};
 
 GherkinToken::operator JSON() const
 {
@@ -25,4 +25,28 @@ std::string GherkinToken::type2str() const
     case Gherkin::Symbol: return "symbol";
     default: return "none";
     }
+}
+
+void GherkinLine::push(Gherkin::TokenType t, GherkinLexer& l)
+{
+    tokens.push_back({t, l});
+}
+
+GherkinLine::operator JSON() const
+{
+    JSON json;
+    for (auto& t : tokens) {
+        json.push_back(t);
+    }
+    return json;
+}
+
+void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
+{
+    if (current == nullptr) {
+        lines.push_back({});
+        current = &lines.back();
+        current->text = l.matcher().line();
+    }
+    current->push(t, l);
 }
