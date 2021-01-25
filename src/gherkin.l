@@ -31,7 +31,7 @@ new_line      \r?\n
 operator      [\w]+
 number        -?(\\d*\\.)?\\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
-param         \"[^\"]*\"|'[^']*'|<[^>]*>
+param         \"[^\"\n]*\"|'[^'\n]*'|<[^>\n]*>
 comment       #[^\n]*|\/\/[^\n]*
 space         \h+
 colon         [:]
