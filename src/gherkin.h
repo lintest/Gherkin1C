@@ -27,6 +27,7 @@ class GherkinLine;
 class GherkinKeword {
 private:
 	friend class GherkinProvider;
+	friend class GherkinLine;
 	bool toplevel = false;
 	std::string type;
 	std::string lang;
@@ -66,6 +67,9 @@ private:
 	friend class GherkinKeword;
 	std::vector<GherkinToken> tokens;
 	std::string text;
+private:
+	JSON& dump(JSON& json, GherkinKeword* keyword) const;
+	JSON& dump(JSON& json) const;
 public:
 	GherkinLine() {}
 	operator JSON() const;

@@ -32,7 +32,7 @@ void GherkinProvider::setKeywords(const std::string& text)
 
 #include <boost/algorithm/string.hpp>
 
-static bool comparei(const std::wstring &a, const std::wstring &b)
+static bool comparei(const std::wstring& a, const std::wstring& b)
 {
 	return boost::iequals(a, b);
 }
@@ -41,7 +41,7 @@ static bool comparei(const std::wstring &a, const std::wstring &b)
 
 #ifdef _WINDOWS
 
-static bool comparei(const std::wstring &a, const std::wstring &b)
+static bool comparei(const std::wstring& a, const std::wstring& b)
 {
 	static _locale_t locale = _create_locale(LC_ALL, "ru-RU");
 	auto res = _wcsnicmp_l(a.c_str(), b.c_str(), std::max(a.size(), b.size()), locale);
@@ -73,7 +73,7 @@ GherkinKeword* GherkinProvider::matchKeyword(const GherkinLine& line)
 }
 
 GherkinKeword::GherkinKeword(const std::string& lang, const std::string& type, const std::string& word)
-	: lang(lang), type(type)
+	: lang(lang), type(type), text(word)
 {
 	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
 	static const reflex::Pattern pattern(regex);
@@ -81,7 +81,6 @@ GherkinKeword::GherkinKeword(const std::string& lang, const std::string& type, c
 	while (matcher.find() != 0) {
 		words.push_back(matcher.wstr());
 	}
-	text = word;
 }
 
 GherkinKeword* GherkinKeword::matchKeyword(const GherkinLine& line)
@@ -134,17 +133,47 @@ void GherkinLine::push(Gherkin::TokenType t, GherkinLexer& l)
 	tokens.push_back({ t, l });
 }
 
-GherkinLine::operator JSON() const
+JSON& GherkinLine::dump(JSON& json, GherkinKeword* keyword) const
 {
-	JSON json, js;
+	JSON js;
+	json["keyword"] = *keyword;
+	auto& words = keyword->words;
+	int keynum = words.end() - words.begin();
+	for (auto& t : tokens) {
+		JSON j = t;
+		if (keynum > 0) {
+			j["type"] = "keyword";
+		}
+		else if (keynum == 0) {
+			if (t.type == Gherkin::Colon) {
+				json["toplevel"] = true;
+			}
+		}
+		js.push_back(j);
+		--keynum;
+	}
+	json["tokens"] = js;
+	return json;
+}
+
+JSON& GherkinLine::dump(JSON& json) const
+{
+	JSON js;
 	for (auto& t : tokens) {
 		js.push_back(t);
 	}
-	json["text"] = text;
 	json["tokens"] = js;
-	auto keyword = GherkinProvider::matchKeyword(*this);
-	if (keyword) json["keyword"] = *keyword;
 	return json;
+}
+
+GherkinLine::operator JSON() const
+{
+	JSON json, js;
+	json["text"] = text;
+	if (tokens.size() == 0) return json;
+	auto keyword = GherkinProvider::matchKeyword(*this);
+	if (keyword) return dump(json, keyword);
+	return dump(json);
 }
 
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)

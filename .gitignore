@@ -22,3 +22,5 @@
 *.o
 *.d
 *.so
+XxCompile.bat
+RE-flex

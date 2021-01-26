@@ -9,6 +9,7 @@ std::vector<std::u16string> GherkinParser::names = {
 
 GherkinParser::GherkinParser()
 {
+	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr, [&](VH value) { GherkinProvider::setKeywords(value); });
 	AddFunction(u"Parse", u"Прочитать", [&](VH filename) { this->result = this->Parse(filename); });
 }
 

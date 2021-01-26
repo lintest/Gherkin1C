@@ -23,8 +23,8 @@ new_line      \r?\n
 operator      \w+
 number        -?(\\d*\\.)?\\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
-param         \"[^\"\n]*\"|'[^'\n]*'|<[^>\n]*>
-comment       #[^\n]*|\/\/[^\n]*
+param         \"[^\"\n\r]*\"|'[^'\n\r]*'|<[^>\n\r]*>
+comment       #[^\n\r]*|\/\/[^\n\r]*
 space         \h+
 colon         :
 tag           @
