@@ -1,5 +1,5 @@
 #ifndef __GHERKINPARSER_H__
-#define __TESTCOMPONENT_H__
+#define __GHERKINPARSER_H__
 
 #include "stdafx.h"
 #include "AddInNative.h"
@@ -13,4 +13,4 @@ private:
 private:
     std::string Parse(const std::string& filename);
 };
-#endif //__TESTCOMPONENT_H__
+#endif //__GHERKINPARSER_H__
