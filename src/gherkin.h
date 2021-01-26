@@ -12,13 +12,14 @@ namespace Gherkin {
 		Operator,
 		Comment,
 		Number,
+		Symbol,
 		Colon,
 		Param,
 		Table,
 		Cell,
 		Date,
 		Tag,
-		Symbol
+		None
 	};
 }
 
@@ -58,6 +59,7 @@ public:
 	std::string text;
 	size_t columno;
 public:
+	static std::string trim(const std::string& text);
 	GherkinToken(Gherkin::TokenType t, GherkinLexer& l);
 	operator JSON() const;
 };
@@ -69,13 +71,15 @@ private:
 	friend class GherkinKeword;
 	std::vector<GherkinToken> tokens;
 	std::string text;
+	size_t lineNumber;
 private:
 	JSON& dump(JSON& json, GherkinKeword* keyword) const;
 	JSON& dump(JSON& json) const;
 public:
-	GherkinLine() {}
-	operator JSON() const;
+	GherkinLine(GherkinLexer& l);
 	void push(Gherkin::TokenType t, GherkinLexer& l);
+	Gherkin::TokenType type() const;
+	operator JSON() const;
 };
 
 class GherkinDocument {

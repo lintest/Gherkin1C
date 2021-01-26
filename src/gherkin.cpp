@@ -102,8 +102,19 @@ GherkinKeword::operator JSON() const
 	return json;
 }
 
+std::string GherkinToken::trim(const std::string& text)
+{
+	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
+	static const reflex::Pattern pattern(regex);
+	auto matcher = reflex::Matcher(pattern, text);
+	return matcher.find() ? matcher.text() : std::string();
+}
+
 GherkinToken::GherkinToken(Gherkin::TokenType t, GherkinLexer& l)
-	: type(t), wstr(l.wstr()), text(l.text()), columno(l.columno()) {};
+	: type(t), wstr(l.wstr()), text(l.text()), columno(l.columno()) 
+{
+	if (t == Gherkin::Cell) text = trim(text);
+};
 
 GherkinToken::operator JSON() const
 {
@@ -129,6 +140,9 @@ std::string GherkinToken::type2str() const
 	default: return "none";
 	}
 }
+
+GherkinLine::GherkinLine(GherkinLexer& l)
+	: lineNumber(l.lineno()) {}
 
 void GherkinLine::push(Gherkin::TokenType t, GherkinLexer& l)
 {
@@ -172,16 +186,22 @@ GherkinLine::operator JSON() const
 {
 	JSON json, js;
 	json["text"] = text;
+	json["line"] = lineNumber;
 	if (tokens.size() == 0) return json;
 	auto keyword = GherkinProvider::matchKeyword(*this);
 	if (keyword) return dump(json, keyword);
 	return dump(json);
 }
 
+Gherkin::TokenType GherkinLine::type() const
+{
+	return tokens.empty() ? Gherkin::None : tokens.at(0).type;
+}
+
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 {
 	if (current == nullptr) {
-		lines.push_back({});
+		lines.push_back({l});
 		current = &lines.back();
 		current->text = l.matcher().line();
 	}
@@ -190,9 +210,18 @@ void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 
 std::string GherkinDocument::dump() const
 {
-	JSON json;
+	JSON json, j, tags;
 	for (auto& line : lines) {
-		json.push_back(line);
+		j.push_back(line);
+		if (line.type() == Gherkin::Tag) {
+			for (auto& token : line.tokens) {
+				if (token.type == Gherkin::Operator) {
+					tags.push_back(token.text);
+				}
+			}
+		}
 	}
+	json["lines"] = j;
+	if (tags.size()) json["tags"] = tags;
 	return json.dump();
 }
