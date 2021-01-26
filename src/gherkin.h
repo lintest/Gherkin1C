@@ -14,6 +14,8 @@ namespace Gherkin {
 		Number,
 		Colon,
 		Param,
+		Table,
+		Cell,
 		Date,
 		Tag,
 		Symbol

@@ -121,6 +121,8 @@ std::string GherkinToken::type2str() const
 	case Gherkin::Number: return "number";
 	case Gherkin::Colon: return "colon";
 	case Gherkin::Param: return "param";
+	case Gherkin::Table: return "table";
+	case Gherkin::Cell: return "cell";
 	case Gherkin::Date: return "date";
 	case Gherkin::Tag: return "tag";
 	case Gherkin::Symbol: return "symbol";

@@ -18,6 +18,7 @@ public:
 }
 
 %option fast nodefault unicode
+%xstate TABLE
 
 new_line      \r?\n
 operator      \w+
@@ -27,19 +28,27 @@ param         \"[^\"\n\r]*\"|'[^'\n\r]*'|<[^>\n\r]*>
 comment       #[^\n\r]*|\/\/[^\n\r]*
 space         \h+
 colon         :
+table         \|
+cell          [^\n\r\|]+
 tag           @
 
 %%
 
-{new_line}   { next(); }
-{space}      // ignore
-{tag}        { push(Gherkin::Tag); }
-{colon}      { push(Gherkin::Colon); }
-{operator}   { push(Gherkin::Operator); }
-{date}       { push(Gherkin::Date); }
-{param}      { push(Gherkin::Param); }
-{number}     { push(Gherkin::Number); }
-{comment}    { push(Gherkin::Comment); }
-.            { push(Gherkin::Symbol); }
+<INITIAL>{new_line}   { next(); start(INITIAL); }
+<INITIAL>{space}      // ignore
+<INITIAL>{tag}        { push(Gherkin::Tag); }
+<INITIAL>{colon}      { push(Gherkin::Colon); }
+<INITIAL>{operator}   { push(Gherkin::Operator); }
+<INITIAL>{param}      { push(Gherkin::Param); }
+<INITIAL>{date}       { push(Gherkin::Date); }
+<INITIAL>{number}     { push(Gherkin::Number); }
+<INITIAL>{comment}    { push(Gherkin::Comment); }
+<INITIAL>{table}      { push(Gherkin::Table); start(TABLE); }
+<INITIAL>.            { push(Gherkin::Symbol); }
+
+<TABLE>{new_line}     { next(); start(INITIAL); }
+<TABLE>{space}        // ignore
+<TABLE>{table}        { push(Gherkin::Table); }
+<TABLE>{cell}         { push(Gherkin::Cell); }
 
 %%
