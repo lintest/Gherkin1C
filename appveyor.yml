@@ -99,7 +99,6 @@ for:
       - copy bin64\Release\%APPVEYOR_PROJECT_NAME%Win64.dll .
       - powershell -File appveyor.ps1
       - appveyor PushArtifact AddIn.zip
-      - powershell -File lib\packages.ps1
       - mkdir database
       - bin\1cv8t.exe CREATEINFOBASE File=%CD%/database
       - bin\1cv8t.exe DESIGNER /F %CD%/database /LoadExternalDataProcessorOrReportFromFiles Example.xml %APPVEYOR_PROJECT_NAME%.epf /Out example.log
