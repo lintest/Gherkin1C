@@ -13,7 +13,7 @@ public:
     document.push(type, *this);
   }
   std::string dump() {
-    return JSON(document).dump();
+    return document.dump();
   }
 }
 

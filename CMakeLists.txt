@@ -7,7 +7,9 @@ option(WITH_BOOST "Use boost library" ON)
 # Create target for the parser
 ADD_CUSTOM_TARGET(GherkinLexer echo Creating GherkinLexer)
 
-if (WIN32)
+if (UNIX)
+    set(REFLEX_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/RE-flex/bin/reflex" CACHE PATH "Reflex executable")
+else(UNIX)
     set(REFLEX_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/RE-flex/bin/win64/reflex.exe" CACHE PATH "Reflex executable")
 endif(WIN32)
 

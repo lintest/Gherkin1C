@@ -79,7 +79,7 @@ private:
 	std::string text;
 public:
 	GherkinDocument() {}
-	operator JSON() const;
+	std::string dump() const;
 	void next() { current = nullptr; }
 	void push(Gherkin::TokenType t, GherkinLexer& l);
 };

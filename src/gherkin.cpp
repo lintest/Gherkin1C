@@ -157,11 +157,11 @@ void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 	current->push(t, l);
 }
 
-GherkinDocument::operator JSON() const
+std::string GherkinDocument::dump() const
 {
 	JSON json;
 	for (auto& line : lines) {
 		json.push_back(line);
 	}
-	return json;
+	return json.dump();
 }
