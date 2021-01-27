@@ -74,10 +74,6 @@ GherkinKeword* GherkinProvider::matchKeyword(const GherkinLine& line)
 	return nullptr;
 }
 
-static std::string WC2MB(const std::wstring& wstr)
-{
-}
-
 std::string GherkinProvider::ParseFile(const std::wstring& filename)
 {
 #ifdef _WINDOWS
