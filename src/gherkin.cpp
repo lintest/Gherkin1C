@@ -2,6 +2,7 @@
 #include "gherkin.lex.h"
 #include <reflex/matcher.h>
 #include <fstream>
+#include <codecvt>
 
 std::vector<GherkinKeword> GherkinProvider::keywords;
 
@@ -73,9 +74,15 @@ GherkinKeword* GherkinProvider::matchKeyword(const GherkinLine& line)
 	return nullptr;
 }
 
+static std::string WC2MB(const std::wstring& wstr)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	return converter.to_bytes(wstr);
+}
+
 std::string GherkinProvider::ParseFile(const std::wstring& filename)
 {
-	std::ifstream istream(filename);
+	std::ifstream istream(WC2MB(filename));
 	reflex::Input input = istream;
 	GherkinLexer lexer(input);
 	lexer.lex();
