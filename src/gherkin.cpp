@@ -1,6 +1,7 @@
 ﻿#include "gherkin.h"
 #include "gherkin.lex.h"
 #include <reflex/matcher.h>
+#include <fstream>
 
 std::vector<GherkinKeword> GherkinProvider::keywords;
 
@@ -70,6 +71,15 @@ GherkinKeword* GherkinProvider::matchKeyword(const GherkinLine& line)
 		if (matched) return matched;
 	}
 	return nullptr;
+}
+
+std::string GherkinProvider::ParseFile(const std::wstring& filename)
+{
+	std::ifstream istream(filename);
+	reflex::Input input = istream;
+	GherkinLexer lexer(input);
+	lexer.lex();
+	return lexer.dump();
 }
 
 GherkinKeword::GherkinKeword(const std::string& lang, const std::string& type, const std::string& word)

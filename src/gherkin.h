@@ -46,8 +46,9 @@ class GherkinProvider {
 private:
 	static std::vector<GherkinKeword> keywords;
 public:
-	static GherkinKeword* matchKeyword(const GherkinLine& line);
 	static void setKeywords(const std::string& text);
+	static GherkinKeword* matchKeyword(const GherkinLine& line);
+	static std::string ParseFile(const std::wstring& filename);
 };
 
 class GherkinToken {
