@@ -121,7 +121,7 @@ GherkinKeword::operator JSON() const
 
 std::string GherkinToken::trim(const std::string& text)
 {
-	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S", reflex::convert_flag::unicode);
+	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
 	static const reflex::Pattern pattern(regex);
 	auto matcher = reflex::Matcher(pattern, text);
 	return matcher.find() ? matcher.text() : std::string();
@@ -130,7 +130,7 @@ std::string GherkinToken::trim(const std::string& text)
 GherkinToken::GherkinToken(Gherkin::TokenType t, GherkinLexer& l)
 	: type(t), wstr(l.wstr()), text(l.text()), columno(l.columno()) 
 {
-	if (t == Gherkin::Cell) text = trim(text);
+	text = trim(text);
 };
 
 GherkinToken::operator JSON() const
@@ -215,6 +215,18 @@ Gherkin::TokenType GherkinLine::type() const
 	return tokens.empty() ? Gherkin::None : tokens.begin()->type;
 }
 
+JSON GherkinDocument::tags2json() const
+{
+	JSON json;
+	for (auto& tag : tags()) {
+		JSON j;
+		j["key"] = tag.first;
+		if (!tag.second.empty()) j["value"] = tag.second;
+		json.push_back(j);
+	}
+	return json;
+}
+
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 {
 	if (current == nullptr) {
@@ -227,32 +239,28 @@ void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 
 std::string GherkinDocument::dump() const
 {
-	JSON json, j, tags;
+	JSON json, j;
 	for (auto& line : lines) {
 		j.push_back(line);
-		if (line.type() == Gherkin::Tag) {
-			for (auto& token : line.tokens) {
-				if (token.type == Gherkin::Operator) {
-					tags.push_back(token.text);
-				}
-			}
-		}
 	}
 	json["lines"] = j;
-	if (tags.size()) json["tags"] = tags;
+	json["tags"] = tags2json();
 	return json.dump();
 }
 
-std::vector<std::string> GherkinDocument::tags() const
+GherkinTags GherkinDocument::tags() const
 {
-	std::vector<std::string> result;
+	GherkinTags result;
 	for (auto& line : lines) {
 		if (line.type() == Gherkin::Tag) {
+			std:: string key, value;
 			for (auto& token : line.tokens) {
-				if (token.type == Gherkin::Operator) {
-					 result.push_back(token.text);
+				switch (token.type) {
+					case Gherkin::Operator: key = token.text; break;
+					case Gherkin::Text: value = token.text; break;
 				}
 			}
+			result.push_back({ key, value });
 		}
 	}
 	return result;
