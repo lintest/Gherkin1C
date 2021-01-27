@@ -12,7 +12,10 @@ public:
   void push(Gherkin::TokenType type) {
     document.push(type, *this);
   }
-  std::string dump() {
+  std::vector<std::string> tags() const {
+    return document.tags();
+  }
+  std::string dump() const {
     return document.dump();
   }
 }

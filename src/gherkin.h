@@ -91,6 +91,7 @@ private:
 public:
 	GherkinDocument() {}
 	std::string dump() const;
+	std::vector<std::string> tags() const;
 	void next() { current = nullptr; }
 	void push(Gherkin::TokenType t, GherkinLexer& l);
 };

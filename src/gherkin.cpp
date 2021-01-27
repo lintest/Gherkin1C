@@ -205,7 +205,7 @@ GherkinLine::operator JSON() const
 
 Gherkin::TokenType GherkinLine::type() const
 {
-	return tokens.empty() ? Gherkin::None : tokens.at(0).type;
+	return tokens.empty() ? Gherkin::None : tokens.begin()->type;
 }
 
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
@@ -234,4 +234,19 @@ std::string GherkinDocument::dump() const
 	json["lines"] = j;
 	if (tags.size()) json["tags"] = tags;
 	return json.dump();
+}
+
+std::vector<std::string> GherkinDocument::tags() const
+{
+	std::vector<std::string> result;
+	for (auto& line : lines) {
+		if (line.type() == Gherkin::Tag) {
+			for (auto& token : line.tokens) {
+				if (token.type == Gherkin::Operator) {
+					 result.push_back(token.text);
+				}
+			}
+		}
+	}
+	return result;
 }
