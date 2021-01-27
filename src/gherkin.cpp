@@ -121,7 +121,7 @@ GherkinKeword::operator JSON() const
 
 std::string GherkinToken::trim(const std::string& text)
 {
-	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
+	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S", reflex::convert_flag::unicode);
 	static const reflex::Pattern pattern(regex);
 	auto matcher = reflex::Matcher(pattern, text);
 	return matcher.find() ? matcher.text() : std::string();
