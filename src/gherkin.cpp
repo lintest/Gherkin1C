@@ -84,7 +84,7 @@ std::string GherkinProvider::ParseFile(const std::wstring& filename)
 	FILE* file = _wfopen(filename.c_str(), L"rb");
 #else
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	FILE* file = fopen(converter.to_bytes(wstr).c_str(), "rb");
+	FILE* file = fopen(converter.to_bytes(filename).c_str(), "rb");
 #endif
 	reflex::Input input = file;
 	GherkinLexer lexer(input);
