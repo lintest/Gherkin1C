@@ -86,4 +86,6 @@ tag           @
 <STR_D>{text}         { push(Gherkin::Line); }
 <STR_D>{space}         // ignore
 
+<<EOF>>               { next(); return 0; }
+
 %%

@@ -1,34 +1,10 @@
 ﻿#include "gherkin.h"
 #include "gherkin.lex.h"
-#include <reflex/matcher.h>
-#include <fstream>
 #include <codecvt>
-
-std::vector<GherkinKeword> GherkinProvider::keywords;
-
-void GherkinProvider::setKeywords(const std::string& text)
-{
-	auto json = JSON::parse(text);
-	keywords.clear();
-	for (auto lang = json.begin(); lang != json.end(); ++lang) {
-		std::string language = lang.key();
-		if ((language != "en") && (language != "ru")) continue;
-		auto& types = lang.value();
-		for (auto type = types.begin(); type != types.end(); ++type) {
-			auto& words = type.value();
-			if (words.is_array()) {
-				for (auto word = words.begin(); word != words.end(); ++word) {
-					keywords.push_back({ language, type.key(), *word });
-				}
-			}
-		}
-	}
-	std::sort(keywords.begin(), keywords.end(),
-		[](const GherkinKeword& a, const GherkinKeword& b) -> bool {
-			return a.words.size() > b.words.size();
-		}
-	);
-}
+#include <locale>
+#include <stdio.h>
+#include <reflex/matcher.h>
+#include <boost/algorithm/string.hpp>
 
 #ifdef USE_BOOST
 
@@ -65,10 +41,70 @@ static bool comparei(std::wstring a, std::wstring b)
 
 #endif//USE_BOOST
 
-GherkinKeword* GherkinProvider::matchKeyword(const GherkinLine& line)
+GherkinProvider::Keywords GherkinProvider::keywords;
+
+GherkinProvider::Keyword::Keyword(const std::string& type, const std::string& text)
+	:type(type), text(text)
 {
-	for (auto& keyword : keywords) {
-		auto matched = keyword.matchKeyword(line);
+	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
+	static const reflex::Pattern pattern(regex);
+	auto matcher = reflex::Matcher(pattern, text);
+	while (matcher.find() != 0) {
+		words.push_back(matcher.wstr());
+	}
+}
+
+GherkinKeyword* GherkinProvider::Keyword::match(GherkinLine& line)
+{
+	if (words.size() > line.tokens.size()) return nullptr;
+	for (size_t i = 0; i < words.size(); ++i) {
+		if (line.tokens[i].type != Gherkin::Operator) return nullptr;
+		if (!comparei(words[i], line.tokens[i].wstr)) return nullptr;
+	}
+	bool toplevel = false;
+	size_t keynum = words.end() - words.begin();
+	for (auto& t : line.tokens) {
+		if (keynum > 0) {
+			t.type = Gherkin::Keyword;
+			keynum--;
+		}
+		else {
+			if (t.type == Gherkin::Colon) 
+				toplevel = true;
+			break;
+		}
+	}
+	return new GherkinKeyword(*this, toplevel);
+}
+
+void GherkinProvider::setKeywords(const std::string& text)
+{
+	auto json = JSON::parse(text);
+	keywords.clear();
+	for (auto lang = json.begin(); lang != json.end(); ++lang) {
+		std::string language = lang.key();
+		if ((language != "en") && (language != "ru")) continue;
+		auto& vector = keywords[language];
+		auto& types = lang.value();
+		for (auto type = types.begin(); type != types.end(); ++type) {
+			auto& words = type.value();
+			if (words.is_array()) {
+				for (auto word = words.begin(); word != words.end(); ++word) {
+					vector.push_back({ type.key(), *word });
+				}
+			}
+		}
+		std::sort(vector.begin(), vector.end(),
+			[](const Keyword& a, const Keyword& b) -> bool { return a.comp(b); }
+		);
+	}
+}
+
+GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinLine& line)
+{
+	std::string language = lang.empty() ? std::string("ru") : lang;
+	for (auto& keyword : keywords[language]) {
+		auto matched = keyword.match(line);
 		if (matched) return matched;
 	}
 	return nullptr;
@@ -89,37 +125,16 @@ std::string GherkinProvider::ParseFile(const std::wstring& filename)
 	return lexer.dump();
 }
 
-GherkinKeword::GherkinKeword(const std::string& lang, const std::string& type, const std::string& word)
-	: lang(lang), type(type), text(word)
-{
-	static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
-	static const reflex::Pattern pattern(regex);
-	auto matcher = reflex::Matcher(pattern, word);
-	while (matcher.find() != 0) {
-		words.push_back(matcher.wstr());
-	}
-}
-
-GherkinKeword* GherkinKeword::matchKeyword(const GherkinLine& line)
-{
-	if (words.size() > line.tokens.size()) return nullptr;
-	for (size_t i = 0; i < words.size(); ++i) {
-		if (line.tokens[i].type != Gherkin::Operator) return nullptr;
-		if (!comparei(words[i], line.tokens[i].wstr)) return nullptr;
-	}
-	return this;
-}
-
-GherkinKeword::operator JSON() const
+GherkinKeyword::operator JSON() const
 {
 	JSON json;
-	json["lang"] = lang;
 	json["text"] = text;
 	json["type"] = type;
+	json["toplevel"] = toplevel;
 	return json;
 }
 
-std::string GherkinToken::trim(const std::string& text)
+static std::string trim(const std::string& text)
 {
 	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
 	static const reflex::Pattern pattern(regex);
@@ -128,7 +143,7 @@ std::string GherkinToken::trim(const std::string& text)
 }
 
 GherkinToken::GherkinToken(Gherkin::TokenType t, GherkinLexer& l)
-	: type(t), wstr(l.wstr()), text(l.text()), columno(l.columno()) 
+	: type(t), wstr(l.wstr()), text(l.text()), columno(l.columno())
 {
 	text = trim(text);
 };
@@ -148,6 +163,7 @@ std::string GherkinToken::type2str() const
 	case Gherkin::Encoding: return "encoding";
 	case Gherkin::Operator: return "operator";
 	case Gherkin::Comment: return "comment";
+	case Gherkin::Keyword: return "keyword";
 	case Gherkin::Number: return "number";
 	case Gherkin::Colon: return "colon";
 	case Gherkin::Param: return "param";
@@ -171,48 +187,24 @@ void GherkinLine::push(Gherkin::TokenType t, GherkinLexer& l)
 	tokens.push_back({ t, l });
 }
 
-JSON& GherkinLine::dump(JSON& json, GherkinKeword* keyword) const
+void GherkinLine::matchKeyword(const std::string& language)
 {
-	JSON js;
-	json["keyword"] = *keyword;
-	auto& words = keyword->words;
-	int keynum = words.end() - words.begin();
-	for (auto& t : tokens) {
-		JSON j = t;
-		if (keynum > 0) {
-			j["type"] = "keyword";
-		}
-		else if (keynum == 0) {
-			if (t.type == Gherkin::Colon) {
-				json["toplevel"] = true;
-			}
-		}
-		js.push_back(j);
-		--keynum;
-	}
-	json["tokens"] = js;
-	return json;
-}
-
-JSON& GherkinLine::dump(JSON& json) const
-{
-	JSON js;
-	for (auto& t : tokens) {
-		js.push_back(t);
-	}
-	json["tokens"] = js;
-	return json;
+	if (tokens.size() == 0) return;
+	if (tokens.begin()->type != Gherkin::Operator) return;
+	keyword.reset(GherkinProvider::matchKeyword(language, *this));
 }
 
 GherkinLine::operator JSON() const
 {
 	JSON json, js;
+	for (auto& t : tokens) {
+		js.push_back(t);
+	}
+	json["tokens"] = js;
 	json["text"] = text;
 	json["line"] = lineNumber;
-	if (tokens.size() == 0) return json;
-	auto keyword = GherkinProvider::matchKeyword(*this);
-	if (keyword) return dump(json, keyword);
-	return dump(json);
+	if (keyword) json["keyword"] = *keyword;
+	return json;
 }
 
 Gherkin::TokenType GherkinLine::type() const
@@ -220,23 +212,43 @@ Gherkin::TokenType GherkinLine::type() const
 	return tokens.empty() ? Gherkin::None : tokens.begin()->type;
 }
 
+void GherkinDocument::setLanguage(GherkinLexer& lexer)
+{
+	if (language.empty())
+		language = trim(lexer.text());
+	else
+		error(lexer, "Language key duplicate error");
+}
+
+void GherkinDocument::error(GherkinLexer& lexer, const std::string& error)
+{
+	//TODO: save error to error list
+}
+
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 {
 	if (current == nullptr) {
-		lines.push_back({l});
+		lines.push_back({ l });
 		current = &lines.back();
 		current->text = l.matcher().line();
 	}
 	current->push(t, l);
+	if (t == Gherkin::Language) setLanguage(l);
+}
+
+void GherkinDocument::next()
+{
+	if (current) current->matchKeyword(language);
+	current = nullptr;
 }
 
 std::string GherkinDocument::dump() const
 {
-	JSON json, j;
+	JSON json, js;
 	for (auto& line : lines) {
-		j.push_back(line);
+		js.push_back(line);
 	}
-	json["lines"] = j;
+	json["lines"] = js;
 	json["tags"] = tags();
 	return json.dump();
 }

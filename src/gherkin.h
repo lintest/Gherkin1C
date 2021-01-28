@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "json.hpp"
 
 using JSON = nlohmann::json;
@@ -13,6 +14,7 @@ namespace Gherkin {
 		Encoding,
 		Multiline,
 		Operator,
+		Keyword,
 		Comment,
 		Number,
 		Symbol,
@@ -30,32 +32,42 @@ namespace Gherkin {
 
 using GherkinTags = std::vector<std::string>;
 
+class GherkinKeyword;
 class GherkinLexer;
 class GherkinToken;
 class GherkinLine;
 
-class GherkinKeword {
-private:
-	friend class GherkinProvider;
-	friend class GherkinLine;
-	bool toplevel = false;
-	std::string type;
-	std::string lang;
-	std::string text;
-	std::vector<std::wstring> words;
-public:
-	GherkinKeword(const std::string& lang, const std::string& type, const std::string& word);
-	GherkinKeword* matchKeyword(const GherkinLine& line);
-	operator JSON() const;
-};
-
 class GherkinProvider {
+public:
+	class Keyword {
+	private:
+		std::string type;
+		std::string text;
+		std::vector<std::wstring> words;
+		friend class GherkinKeyword;
+	public:
+		Keyword(const std::string& type, const std::string& text);
+		bool comp(const Keyword& other) const { return words.size() > other.words.size(); }
+		GherkinKeyword* match(GherkinLine& line);
+	};
+	using Keywords = std::map<std::string, std::vector<Keyword>>;
 private:
-	static std::vector<GherkinKeword> keywords;
+	static Keywords keywords;
 public:
 	static void setKeywords(const std::string& text);
-	static GherkinKeword* matchKeyword(const GherkinLine& line);
+	static GherkinKeyword* matchKeyword(const std::string &lang, GherkinLine& line);
 	static std::string ParseFile(const std::wstring& filename);
+};
+
+class GherkinKeyword {
+private:
+	std::string type;
+	std::string text;
+	bool toplevel;
+public:
+	GherkinKeyword(GherkinProvider::Keyword& source, bool toplevel)
+		: type(source.type), text(source.text), toplevel(toplevel) {}
+	operator JSON() const;
 };
 
 class GherkinToken {
@@ -67,7 +79,6 @@ public:
 	std::string text;
 	size_t columno;
 public:
-	static std::string trim(const std::string& text);
 	GherkinToken(Gherkin::TokenType t, GherkinLexer& l);
 	operator JSON() const;
 };
@@ -76,13 +87,13 @@ class GherkinLine {
 private:
 	friend class GherkinProvider;
 	friend class GherkinDocument;
-	friend class GherkinKeword;
+	friend class GherkinKeyword;
 	std::vector<GherkinToken> tokens;
 	std::string text;
 	size_t lineNumber;
 private:
-	JSON& dump(JSON& json, GherkinKeword* keyword) const;
-	JSON& dump(JSON& json) const;
+	std::unique_ptr<GherkinKeyword> keyword;
+	void matchKeyword(const std::string& language);
 public:
 	GherkinLine(GherkinLexer& l);
 	void push(Gherkin::TokenType t, GherkinLexer& l);
@@ -94,12 +105,16 @@ class GherkinDocument {
 private:
 	std::vector<GherkinLine> lines;
 	GherkinLine* current = nullptr;
+	std::string language;
+private:
+	void setLanguage(GherkinLexer& lexer);
 public:
 	GherkinDocument() {}
 	std::string dump() const;
 	GherkinTags tags() const;
-	void next() { current = nullptr; }
-	void push(Gherkin::TokenType t, GherkinLexer& l);
+	void next();
+	void push(Gherkin::TokenType type, GherkinLexer& lexer);
+	void error(GherkinLexer& lexer, const std::string& error);
 };
 
 #endif//GHERKIN_H
