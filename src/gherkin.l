@@ -26,9 +26,11 @@ public:
 }
 
 %option fast nodefault unicode
+%xstate TAG
 %xstate TAIL
 %xstate TABLE
-%xstate TAG
+%xstate STR_A
+%xstate STR_D
 
 new_line      \r?\n
 language      #\s*(?i)(language)\s*:\s*
@@ -43,6 +45,8 @@ colon         :
 table         \|
 cell          [^\s][^\n\r\|]*
 text          [^\s][^\r\n]*
+str_a         \`\`\`[^\n^r]*
+str_d         \"\"\"[^\n^r]*
 tag           @
 
 %%
@@ -59,6 +63,8 @@ tag           @
 <INITIAL>{date}       { push(Gherkin::Date); }
 <INITIAL>{number}     { push(Gherkin::Number); }
 <INITIAL>{table}      { push(Gherkin::Table); start(TABLE); }
+<INITIAL>{str_a}      { push(Gherkin::Multiline); start(STR_A); }
+<INITIAL>{str_d}      { push(Gherkin::Multiline); start(STR_D); }
 <INITIAL>.            { push(Gherkin::Symbol); }
 
 <TAIL>{new_line}      { next(); start(INITIAL); }
@@ -69,5 +75,15 @@ tag           @
 <TABLE>{table}        { push(Gherkin::Table); }
 <TABLE>{cell}         { push(Gherkin::Cell); }
 <TABLE>{space}        // ignore
+
+<STR_A>{new_line}     { next(); }
+<STR_A>{str_a}        { push(Gherkin::Multiline); start(INITIAL); }
+<STR_A>{text}         { push(Gherkin::Line); }
+<STR_A>{space}         // ignore
+
+<STR_D>{new_line}     { next(); }
+<STR_D>{str_d}        { push(Gherkin::Multiline); start(INITIAL); }
+<STR_D>{text}         { push(Gherkin::Line); }
+<STR_D>{space}         // ignore
 
 %%

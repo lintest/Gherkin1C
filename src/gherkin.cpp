@@ -153,10 +153,12 @@ std::string GherkinToken::type2str() const
 	case Gherkin::Param: return "param";
 	case Gherkin::Table: return "table";
 	case Gherkin::Cell: return "cell";
+	case Gherkin::Line: return "line";
 	case Gherkin::Date: return "date";
 	case Gherkin::Text: return "text";
 	case Gherkin::Tag: return "tag";
 	case Gherkin::Symbol: return "symbol";
+	case Gherkin::Multiline: return "multiline";
 	default: return "none";
 	}
 }

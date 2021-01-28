@@ -11,6 +11,7 @@ namespace Gherkin {
 	enum TokenType {
 		Language,
 		Encoding,
+		Multiline,
 		Operator,
 		Comment,
 		Number,
@@ -19,6 +20,7 @@ namespace Gherkin {
 		Param,
 		Table,
 		Cell,
+		Line,
 		Text,
 		Date,
 		Tag,
