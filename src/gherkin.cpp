@@ -144,6 +144,8 @@ GherkinToken::operator JSON() const
 std::string GherkinToken::type2str() const
 {
 	switch (type) {
+	case Gherkin::Language: return "language";
+	case Gherkin::Encoding: return "encoding";
 	case Gherkin::Operator: return "operator";
 	case Gherkin::Comment: return "comment";
 	case Gherkin::Number: return "number";
@@ -216,18 +218,6 @@ Gherkin::TokenType GherkinLine::type() const
 	return tokens.empty() ? Gherkin::None : tokens.begin()->type;
 }
 
-JSON GherkinDocument::tags2json() const
-{
-	JSON json;
-	for (auto& tag : tags()) {
-		JSON j;
-		j["key"] = tag.first;
-		if (!tag.second.empty()) j["value"] = tag.second;
-		json.push_back(j);
-	}
-	return json;
-}
-
 void GherkinDocument::push(Gherkin::TokenType t, GherkinLexer& l)
 {
 	if (current == nullptr) {
@@ -245,7 +235,7 @@ std::string GherkinDocument::dump() const
 		j.push_back(line);
 	}
 	json["lines"] = j;
-	json["tags"] = tags2json();
+	json["tags"] = tags();
 	return json.dump();
 }
 
@@ -253,15 +243,10 @@ GherkinTags GherkinDocument::tags() const
 {
 	GherkinTags result;
 	for (auto& line : lines) {
-		if (line.type() == Gherkin::Tag) {
-			std:: string key, value;
-			for (auto& token : line.tokens) {
-				switch (token.type) {
-					case Gherkin::Operator: key = token.text; break;
-					case Gherkin::Text: value = token.text; break;
-				}
-			}
-			result.push_back({ key, value });
+		if (line.tokens.empty()) continue;
+		auto& token = *line.tokens.begin();
+		if (token.type == Gherkin::Tag) {
+			result.push_back(token.text);
 		}
 	}
 	return result;

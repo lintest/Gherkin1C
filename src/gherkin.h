@@ -9,6 +9,8 @@ using JSON = nlohmann::json;
 
 namespace Gherkin {
 	enum TokenType {
+		Language,
+		Encoding,
 		Operator,
 		Comment,
 		Number,
@@ -24,7 +26,7 @@ namespace Gherkin {
 	};
 }
 
-using GherkinTags = std::vector<std::pair<std::string, std::string>>;
+using GherkinTags = std::vector<std::string>;
 
 class GherkinLexer;
 class GherkinToken;
@@ -91,7 +93,6 @@ private:
 	std::vector<GherkinLine> lines;
 	GherkinLine* current = nullptr;
 	std::string text;
-	JSON tags2json() const;
 public:
 	GherkinDocument() {}
 	std::string dump() const;
