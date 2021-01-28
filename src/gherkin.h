@@ -94,7 +94,6 @@ class GherkinDocument {
 private:
 	std::vector<GherkinLine> lines;
 	GherkinLine* current = nullptr;
-	std::string text;
 public:
 	GherkinDocument() {}
 	std::string dump() const;
