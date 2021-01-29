@@ -36,6 +36,7 @@ public:
 new_line      \r?\n
 language      #\s*(?i)(language)\s*:\s*
 encoding      #\s*(?i)(encoding)\s*:\s*
+asterisk      \*
 operator      \w+
 number        -?(\\d*\\.)?\\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
@@ -56,6 +57,7 @@ tag           @
 <INITIAL>{space}      // ignore
 <INITIAL>{language}   { till(TokenType::Language); }
 <INITIAL>{encoding}   { till(TokenType::Encoding); }
+<INITIAL>{asterisk}   { till(TokenType::Asterisk); }
 <INITIAL>{comment}    { till(TokenType::Comment); }
 <INITIAL>{tag}        { till(TokenType::Tag); }
 <INITIAL>{colon}      { push(TokenType::Colon); }

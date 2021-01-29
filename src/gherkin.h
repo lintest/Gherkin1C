@@ -16,6 +16,7 @@ namespace Gherkin {
 		Language,
 		Encoding,
 		Multiline,
+		Asterisk,
 		Operator,
 		Keyword,
 		Comment,
@@ -81,6 +82,7 @@ namespace Gherkin {
 
 	class GherkinKeyword {
 	private:
+		friend class GherkinDocument;
 		KeywordType type;
 		std::string text;
 		bool toplevel;
@@ -120,7 +122,7 @@ namespace Gherkin {
 		size_t lineNumber;
 	private:
 		std::unique_ptr<GherkinKeyword> keyword;
-		void matchKeyword(const std::string& language);
+		GherkinKeyword* matchKeyword(const std::string& language);
 	public:
 		GherkinLine(GherkinLexer& l);
 		void push(TokenType t, GherkinLexer& l);
@@ -145,12 +147,14 @@ namespace Gherkin {
 		std::string language;
 		GherkinTags tag_stack;
 		GherkinComments comment_stack;
-		void setLanguage(GherkinLexer& lexer);
 		std::vector<GherkinLine> lines;
 		GherkinLine* current = nullptr;
 		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> backround;
 		std::vector<GherkinDefinition> scenarios;
+	private:
+		void setLanguage(GherkinLexer& lexer);
+		void setDefinition(std::unique_ptr<GherkinDefinition> &def, GherkinLine& line);
 	public:
 		GherkinDocument() {}
 		std::string dump() const;
@@ -158,6 +162,7 @@ namespace Gherkin {
 		void next();
 		void push(TokenType type, GherkinLexer& lexer);
 		void error(GherkinLexer& lexer, const std::string& error);
+		void error(GherkinLine& line, const std::string& error);
 	};
 
 }
