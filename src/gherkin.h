@@ -50,6 +50,9 @@ namespace Gherkin {
 	using GherkinTags = std::vector<std::string>;
 	using GherkinComments = std::vector<std::string>;
 
+	class GherkinProvider;
+	class GherkinDocument;
+	class GherkinDefinition;
 	class GherkinKeyword;
 	class GherkinToken;
 	class GherkinLine;
