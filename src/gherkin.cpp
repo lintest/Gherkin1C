@@ -128,12 +128,12 @@ namespace Gherkin {
 		return lexer.dump();
 	}
 
-	KeywordType GherkinKeyword::str2type(const std::string &text)
+	KeywordType GherkinKeyword::str2type(const std::string& text)
 	{
 		std::string type = text;
 		transform(type.begin(), type.end(), type.begin(), tolower);
 		static std::map<std::string, KeywordType> types{
-			{"and", KeywordType::And},
+			{ "and", KeywordType::And},
 			{ "background", KeywordType::Background },
 			{ "but", KeywordType::But },
 			{ "examples", KeywordType::Examples },
@@ -229,11 +229,12 @@ namespace Gherkin {
 		tokens.push_back({ t, l });
 	}
 
-	GherkinKeyword* GherkinLine::matchKeyword(const std::string& language)
+	GherkinKeyword* GherkinLine::matchKeyword(GherkinDocument& document)
 	{
 		if (tokens.size() == 0) return nullptr;
 		if (tokens.begin()->type != TokenType::Operator) return nullptr;
-		keyword.reset(GherkinProvider::matchKeyword(language, *this));
+		keyword.reset(GherkinProvider::matchKeyword(document.getLanguage(), *this));
+		//TODO: check does colon exists for top level keywords: Feature, Background, Scenario...
 		return keyword.get();
 	}
 
@@ -256,10 +257,10 @@ namespace Gherkin {
 	}
 
 	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& source)
-		: keyword(*source.keyword)
+		: lineNumber(source.lineNumber), keyword(*source.keyword)
 	{
-		comments = std::move(document.comment_stack);
-		tags = std::move(document.tag_stack);
+		comments = std::move(document.commentStack);
+		tags = std::move(document.tagStack);
 	}
 
 	void GherkinDocument::setLanguage(GherkinLexer& lexer)
@@ -274,10 +275,18 @@ namespace Gherkin {
 	{
 		if (def) {
 			std::string type = GherkinKeyword::type2str(line.keyword->type);
-			error(line, type + ": key duplicate error");
+			error(line, type + " keyword duplicate error");
 		}
-		else
-			feature.reset(new GherkinDefinition(*this, line));
+		else {
+			lastDefinition = new GherkinDefinition(*this, line);
+			feature.reset(lastDefinition);
+		}
+	}
+
+	void GherkinDocument::addScenarioDefinition(GherkinLine& line)
+	{
+		scenarios.emplace_back(*this, line);
+		lastDefinition = &scenarios.back();
 	}
 
 	void GherkinDocument::error(GherkinLexer& lexer, const std::string& error)
@@ -292,38 +301,42 @@ namespace Gherkin {
 
 	void GherkinDocument::push(TokenType t, GherkinLexer& l)
 	{
-		if (current == nullptr) {
+		if (currentLine == nullptr) {
 			lines.push_back({ l });
-			current = &lines.back();
-			current->text = l.matcher().line();
+			currentLine = &lines.back();
+			currentLine->text = l.matcher().line();
 		}
-		current->push(t, l);
+		currentLine->push(t, l);
 		switch (t) {
 		case TokenType::Language:
-			setLanguage(l); 
+			setLanguage(l);
 			break;
 		case TokenType::Comment:
-			comment_stack.push_back(l.text());
+			commentStack.push_back(l.text());
 			break;
 		case TokenType::Tag:
-			tag_stack.push_back(l.text());
+			tagStack.push_back(l.text());
 			break;
 		}
 	}
 
 	void GherkinDocument::next()
 	{
-		if (current == nullptr) return;
-		auto keyword = current->matchKeyword(language);
+		if (currentLine == nullptr) return;
+		auto keyword = currentLine->matchKeyword(*this);
 		if (keyword) {
 			switch (keyword->type) {
 			case KeywordType::Feature:
-				setDefinition(feature, *current); break;
-			case KeywordType:: Background:
-				setDefinition(backround, *current); break;
+				setDefinition(feature, *currentLine); break;
+			case KeywordType::ScenarioOutline:
+				setDefinition(outline, *currentLine); break;
+			case KeywordType::Background:
+				setDefinition(backround, *currentLine); break;
+			case KeywordType::Scenario:
+				addScenarioDefinition(*currentLine); break;
 			}
 		}
-		current = nullptr;
+		currentLine = nullptr;
 	}
 
 	std::string GherkinDocument::dump() const
@@ -339,14 +352,6 @@ namespace Gherkin {
 
 	GherkinTags GherkinDocument::tags() const
 	{
-		GherkinTags result;
-		for (auto& line : lines) {
-			if (line.tokens.empty()) continue;
-			auto& token = *line.tokens.begin();
-			if (token.type == TokenType::Tag) {
-				result.push_back(token.text);
-			}
-		}
-		return result;
+		return feature ? feature->tags : GherkinTags();
 	}
 }

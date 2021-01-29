@@ -87,7 +87,7 @@ namespace Gherkin {
 		std::string text;
 		bool toplevel;
 	public:
-		static KeywordType str2type(const std::string &text);
+		static KeywordType str2type(const std::string& text);
 		static std::string type2str(KeywordType type);
 		GherkinKeyword(const GherkinProvider::Keyword& source, bool toplevel)
 			: type(source.type), text(source.text), toplevel(toplevel) {}
@@ -122,7 +122,7 @@ namespace Gherkin {
 		size_t lineNumber;
 	private:
 		std::unique_ptr<GherkinKeyword> keyword;
-		GherkinKeyword* matchKeyword(const std::string& language);
+		GherkinKeyword* matchKeyword(GherkinDocument& document);
 	public:
 		GherkinLine(GherkinLexer& l);
 		void push(TokenType t, GherkinLexer& l);
@@ -132,6 +132,8 @@ namespace Gherkin {
 
 	class GherkinDefinition {
 	private:
+		friend class GherkinDocument;
+		size_t lineNumber;
 		std::string name;
 		std::string description;
 		GherkinComments comments;
@@ -144,17 +146,22 @@ namespace Gherkin {
 	class GherkinDocument {
 	private:
 		friend class GherkinDefinition;
-		std::string language;
-		GherkinTags tag_stack;
-		GherkinComments comment_stack;
+		GherkinLine* currentLine = nullptr;
+		GherkinTags tagStack;
+		GherkinComments commentStack;
+		std::vector<GherkinDefinition> stepStack;
+		GherkinDefinition* lastDefinition = nullptr;
+	private:
 		std::vector<GherkinLine> lines;
-		GherkinLine* current = nullptr;
+		std::string language;
 		std::unique_ptr<GherkinDefinition> feature;
+		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> backround;
 		std::vector<GherkinDefinition> scenarios;
 	private:
 		void setLanguage(GherkinLexer& lexer);
-		void setDefinition(std::unique_ptr<GherkinDefinition> &def, GherkinLine& line);
+		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line);
+		void addScenarioDefinition(GherkinLine& line);
 	public:
 		GherkinDocument() {}
 		std::string dump() const;
@@ -163,8 +170,8 @@ namespace Gherkin {
 		void push(TokenType type, GherkinLexer& lexer);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
+		std::string getLanguage() const { return language; }
 	};
-
 }
 
 #endif//GHERKIN_H
