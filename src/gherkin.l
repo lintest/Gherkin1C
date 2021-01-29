@@ -1,20 +1,21 @@
 %top{
   #include "gherkin.h"
+  using namespace Gherkin;
 %}
 
 %class{
 private:
+  TokenType current_token;
   GherkinDocument document;
-  Gherkin::TokenType current;
 public:
   void next() {
     document.next();
   }
-  void push(Gherkin::TokenType type) {
+  void push(TokenType type) {
     document.push(type, *this);
   }
-  void till(Gherkin::TokenType type) {
-    current = type;
+  void till(TokenType type) {
+    current_token = type;
     start(TAIL);
   }
   GherkinTags tags() const {
@@ -53,37 +54,37 @@ tag           @
 
 <INITIAL>{new_line}   { next(); start(INITIAL); }
 <INITIAL>{space}      // ignore
-<INITIAL>{language}   { till(Gherkin::Language); }
-<INITIAL>{encoding}   { till(Gherkin::Encoding); }
-<INITIAL>{comment}    { till(Gherkin::Comment); }
-<INITIAL>{tag}        { till(Gherkin::Tag); }
-<INITIAL>{colon}      { push(Gherkin::Colon); }
-<INITIAL>{operator}   { push(Gherkin::Operator); }
-<INITIAL>{param}      { push(Gherkin::Param); }
-<INITIAL>{date}       { push(Gherkin::Date); }
-<INITIAL>{number}     { push(Gherkin::Number); }
-<INITIAL>{table}      { push(Gherkin::Table); start(TABLE); }
-<INITIAL>{str_a}      { push(Gherkin::Multiline); start(STR_A); }
-<INITIAL>{str_d}      { push(Gherkin::Multiline); start(STR_D); }
-<INITIAL>.            { push(Gherkin::Symbol); }
+<INITIAL>{language}   { till(TokenType::Language); }
+<INITIAL>{encoding}   { till(TokenType::Encoding); }
+<INITIAL>{comment}    { till(TokenType::Comment); }
+<INITIAL>{tag}        { till(TokenType::Tag); }
+<INITIAL>{colon}      { push(TokenType::Colon); }
+<INITIAL>{operator}   { push(TokenType::Operator); }
+<INITIAL>{param}      { push(TokenType::Param); }
+<INITIAL>{date}       { push(TokenType::Date); }
+<INITIAL>{number}     { push(TokenType::Number); }
+<INITIAL>{table}      { push(TokenType::Table); start(TABLE); }
+<INITIAL>{str_a}      { push(TokenType::Multiline); start(STR_A); }
+<INITIAL>{str_d}      { push(TokenType::Multiline); start(STR_D); }
+<INITIAL>.            { push(TokenType::Symbol); }
 
 <TAIL>{new_line}      { next(); start(INITIAL); }
-<TAIL>{text}          { push(current); }
+<TAIL>{text}          { push(current_token); }
 <TAIL>{space}         // ignore
 
 <TABLE>{new_line}     { next(); start(INITIAL); }
-<TABLE>{table}        { push(Gherkin::Table); }
-<TABLE>{cell}         { push(Gherkin::Cell); }
+<TABLE>{table}        { push(TokenType::Table); }
+<TABLE>{cell}         { push(TokenType::Cell); }
 <TABLE>{space}        // ignore
 
 <STR_A>{new_line}     { next(); }
-<STR_A>{str_a}        { push(Gherkin::Multiline); start(INITIAL); }
-<STR_A>{text}         { push(Gherkin::Line); }
+<STR_A>{str_a}        { push(TokenType::Multiline); start(INITIAL); }
+<STR_A>{text}         { push(TokenType::Line); }
 <STR_A>{space}         // ignore
 
 <STR_D>{new_line}     { next(); }
-<STR_D>{str_d}        { push(Gherkin::Multiline); start(INITIAL); }
-<STR_D>{text}         { push(Gherkin::Line); }
+<STR_D>{str_d}        { push(TokenType::Multiline); start(INITIAL); }
+<STR_D>{text}         { push(TokenType::Line); }
 <STR_D>{space}         // ignore
 
 <<EOF>>               { next(); return 0; }

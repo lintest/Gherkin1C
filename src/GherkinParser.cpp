@@ -1,5 +1,5 @@
 ﻿#include "GherkinParser.h"
-#include "gherkin.lex.h"
+#include "gherkin.h"
 
 std::vector<std::u16string> GherkinParser::names = {
 	AddComponent(u"GherkinParser", []() { return new GherkinParser; }),
@@ -7,6 +7,6 @@ std::vector<std::u16string> GherkinParser::names = {
 
 GherkinParser::GherkinParser()
 {
-	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr, [&](VH value) { GherkinProvider::setKeywords(value); });
-	AddFunction(u"ParseFile", u"ПрочитатьФайл", [&](VH filename) {  this->result = GherkinProvider::ParseFile(filename); });
+	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr, [&](VH value) { Gherkin::GherkinProvider::setKeywords(value); });
+	AddFunction(u"ParseFile", u"ПрочитатьФайл", [&](VH filename) {  this->result = Gherkin::GherkinProvider::ParseFile(filename); });
 }
