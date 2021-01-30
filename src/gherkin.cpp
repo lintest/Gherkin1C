@@ -41,6 +41,14 @@ static bool comparei(std::wstring a, std::wstring b)
 
 #endif//USE_BOOST
 
+static std::string trim(const std::string& text)
+{
+	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
+	static const reflex::Pattern pattern(regex);
+	auto matcher = reflex::Matcher(pattern, text);
+	return matcher.find() ? matcher.text() : std::string();
+}
+
 namespace Gherkin {
 
 	GherkinProvider::Keywords GherkinProvider::keywords;
@@ -177,14 +185,6 @@ namespace Gherkin {
 		return json;
 	}
 
-	static std::string trim(const std::string& text)
-	{
-		static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
-		static const reflex::Pattern pattern(regex);
-		auto matcher = reflex::Matcher(pattern, text);
-		return matcher.find() ? matcher.text() : std::string();
-	}
-
 	GherkinToken::GherkinToken(TokenType t, GherkinLexer& l)
 		: type(t), wstr(l.wstr()), text(l.text()), column(l.columno())
 	{
@@ -258,19 +258,60 @@ namespace Gherkin {
 		return tokens.empty() ? TokenType::None : tokens.begin()->type;
 	}
 
-	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& source)
-		: lineNumber(source.lineNumber)
+	int GherkinLine::getIndent() const
+	{
+		//TODO: detect line indent
+		return 0;
+	}
+
+	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& line)
+		: lineNumber(line.getLineNumber())
 	{
 		comments = std::move(document.commentStack);
 		tags = std::move(document.tagStack);
 	}
 
-	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& source)
-		: GherkinElement(document, source), keyword(*source.keyword)
+	GherkinElement::~GherkinElement()
+	{
+		for (auto ptr : items) {
+			free(ptr);
+		}
+		items.clear();
+	}
+
+	void GherkinElement::push(GherkinElement* item)
+	{
+		items.push_back(item);
+	}
+
+	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
+		: GherkinElement(document, line), keyword(*line.getKeyword())
 	{
 	}
 
 	GherkinDefinition::operator JSON() const
+	{
+		JSON json;
+		return json;
+	}
+
+	GherkinStep::GherkinStep(GherkinDocument& document, const GherkinLine& line)
+		: GherkinElement(document, line), keyword(*line.getKeyword())
+	{
+	}
+
+	GherkinStep::operator JSON() const
+	{
+		JSON json;
+		return json;
+	}
+
+	GherkinGroup::GherkinGroup(GherkinDocument& document, const GherkinLine& line)
+		: GherkinElement(document, line), keyword(*line.getKeyword())
+	{
+	}
+
+	GherkinGroup::operator JSON() const
 	{
 		JSON json;
 		return json;
@@ -284,22 +325,32 @@ namespace Gherkin {
 			error(lexer, "Language key duplicate error");
 	}
 
+	void GherkinDocument::resetElementStack(GherkinElement& element)
+	{
+		lastElement = &element;
+		elementStack.clear();
+		elementStack.emplace_back(-1, &element);
+	}
+
 	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line)
 	{
 		if (def) {
 			std::string type = GherkinKeyword::type2str(line.keyword->type);
 			error(line, type + " keyword duplicate error");
+			error(line, type + " keyword duplicate error");
 		}
 		else {
-			lastDefinition = new GherkinDefinition(*this, line);
-			feature.reset(lastDefinition);
+			auto definition = new GherkinDefinition(*this, line);
+			feature.reset(definition);
+			resetElementStack(*definition);
 		}
 	}
 
 	void GherkinDocument::addScenarioDefinition(GherkinLine& line)
 	{
 		scenarios.emplace_back(*this, line);
-		lastDefinition = &scenarios.back();
+		auto definition = &scenarios.back();
+		resetElementStack(*definition);
 	}
 
 	void GherkinDocument::error(GherkinLexer& lexer, const std::string& error)
@@ -333,6 +384,30 @@ namespace Gherkin {
 		}
 	}
 
+	void GherkinDocument::addElement(GherkinLine& line)
+	{
+		GherkinElement* element = nullptr;
+		switch (currentLine->type()) {
+		case TokenType::Asterisk:
+			element = new GherkinGroup(*this, line);
+			break;
+		case TokenType::Keyword:
+			element = new GherkinStep(*this, line);
+			break;
+		default:
+			return;
+		}
+		//TODO: check element indents
+		auto indent = line.getIndent();
+		while (!elementStack.empty()) {
+			if (elementStack.back().first < indent) break;
+			elementStack.pop_back();
+		}
+		if (elementStack.empty()) throw u"Element statck is empty";
+		elementStack.emplace_back(indent, element);
+		elementStack.back().second->push(element);
+	}
+
 	void GherkinDocument::next()
 	{
 		if (currentLine == nullptr) return;
@@ -340,14 +415,28 @@ namespace Gherkin {
 		if (keyword) {
 			switch (keyword->type) {
 			case KeywordType::Feature:
-				setDefinition(feature, *currentLine); break;
+				setDefinition(feature, *currentLine);
+				break;
 			case KeywordType::ScenarioOutline:
-				setDefinition(outline, *currentLine); break;
+				setDefinition(outline, *currentLine);
+				break;
 			case KeywordType::Background:
-				setDefinition(backround, *currentLine); break;
+				setDefinition(backround, *currentLine);
+				break;
 			case KeywordType::Scenario:
-				addScenarioDefinition(*currentLine); break;
+				addScenarioDefinition(*currentLine);
+				break;
+			default:
+				addElement(*currentLine);
 			}
+		}
+		else {
+			switch (currentLine->type()) {
+			case TokenType::Asterisk:
+				addElement(*currentLine);
+				break;
+			}
+			//TODO: add tables and multiline string to lastElement
 		}
 		currentLine = nullptr;
 	}
