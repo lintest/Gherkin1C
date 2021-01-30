@@ -402,14 +402,15 @@ namespace Gherkin {
 
 	void GherkinDocument::addElement(GherkinLine& line)
 	{
-		GherkinElement* element = nullptr;
+		std::unique_ptr<GherkinElement> element;
 		switch (currentLine->getType()) {
 		case TokenType::Keyword:
-			element = new GherkinStep(*this, line);
+			element.reset(new GherkinStep(*this, line));
 			break;
 		case TokenType::Asterisk:
 		case TokenType::Operator:
-			element = new GherkinGroup(*this, line);
+		case TokenType::Symbol:
+			element.reset(new GherkinGroup(*this, line));
 			break;
 		case TokenType::Multiline:
 			//TODO: add multy line
@@ -427,11 +428,10 @@ namespace Gherkin {
 			elementStack.pop_back();
 		}
 		if (elementStack.empty()) {
-			delete element;
 			throw u"Element statck is empty";
 		}
-		elementStack.emplace_back(indent, element);
-		elementStack.back().second->push(element);
+		elementStack.emplace_back(indent, element.get());
+		elementStack.back().second->push(element.release());
 	}
 
 	void GherkinDocument::next(GherkinLexer& l)
@@ -463,6 +463,8 @@ namespace Gherkin {
 		else {
 			switch (currentLine->getType()) {
 			case TokenType::Asterisk:
+			case TokenType::Operator:
+			case TokenType::Symbol:
 				addElement(*currentLine);
 				break;
 			}
