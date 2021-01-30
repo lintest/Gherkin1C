@@ -85,7 +85,7 @@ namespace Gherkin {
 		keywords.clear();
 		for (auto lang = json.begin(); lang != json.end(); ++lang) {
 			std::string language = lang.key();
-			if ((language != "en") && (language != "ru")) continue;
+			if ((language != "en") && (language != "ru")) continue; // TODO: remove this line
 			auto& vector = keywords[language];
 			auto& types = lang.value();
 			for (auto type = types.begin(); type != types.end(); ++type) {
@@ -93,6 +93,8 @@ namespace Gherkin {
 				auto& words = type.value();
 				if (words.is_array()) {
 					for (auto word = words.begin(); word != words.end(); ++word) {
+						std::string text = trim(*word);
+						if (text == "*") continue;
 						vector.push_back({ t, *word });
 					}
 				}
@@ -256,11 +258,22 @@ namespace Gherkin {
 		return tokens.empty() ? TokenType::None : tokens.begin()->type;
 	}
 
-	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& source)
-		: lineNumber(source.lineNumber), keyword(*source.keyword)
+	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& source)
+		: lineNumber(source.lineNumber)
 	{
 		comments = std::move(document.commentStack);
 		tags = std::move(document.tagStack);
+	}
+
+	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& source)
+		: GherkinElement(document, source), keyword(*source.keyword)
+	{
+	}
+
+	GherkinDefinition::operator JSON() const
+	{
+		JSON json;
+		return json;
 	}
 
 	void GherkinDocument::setLanguage(GherkinLexer& lexer)

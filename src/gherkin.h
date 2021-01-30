@@ -116,6 +116,7 @@ namespace Gherkin {
 		friend class GherkinProvider;
 		friend class GherkinDefinition;
 		friend class GherkinDocument;
+		friend class GherkinElement;
 		friend class GherkinKeyword;
 		std::vector<GherkinToken> tokens;
 		std::string text;
@@ -130,21 +131,32 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
-	class GherkinDefinition {
+	class GherkinElement {
+	protected:
+		size_t lineNumber;
+		GherkinTags tags;
+		GherkinComments comments;
+		std::vector<GherkinElement> items;
+	public:
+		GherkinElement(GherkinDocument& document, const GherkinLine& source);
+		virtual operator JSON() const = 0;
+	};
+
+	class GherkinDefinition
+		: public GherkinElement {
 	private:
 		friend class GherkinDocument;
-		size_t lineNumber;
 		std::string name;
 		std::string description;
-		GherkinComments comments;
 		GherkinKeyword keyword;
-		GherkinTags tags;
 	public:
 		GherkinDefinition(GherkinDocument& document, const GherkinLine& source);
+		virtual operator JSON() const override;
 	};
 
 	class GherkinDocument {
 	private:
+		friend class GherkinElement;
 		friend class GherkinDefinition;
 		GherkinLine* currentLine = nullptr;
 		GherkinTags tagStack;
