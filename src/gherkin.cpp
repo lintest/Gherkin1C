@@ -260,8 +260,21 @@ namespace Gherkin {
 
 	int GherkinLine::getIndent() const
 	{
-		//TODO: detect line indent
-		return 0;
+		int indent = 0;
+		const int tabSize = 4;
+		for (auto ch : text) {
+			switch (ch) {
+			case ' ': 
+				indent++;
+				break;
+			case '\t':
+				indent = indent + tabSize - (indent % tabSize);
+				break;
+			default:
+				return indent;
+			}
+		}
+		return INT_MAX;
 	}
 
 	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& line)
