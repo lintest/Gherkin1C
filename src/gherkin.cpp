@@ -226,6 +226,9 @@ namespace Gherkin {
 	GherkinLine::GherkinLine(GherkinLexer& l)
 		: lineNumber(l.lineno()) {}
 
+	GherkinLine::GherkinLine(size_t lineNumber)
+		: lineNumber(lineNumber) {}
+
 	void GherkinLine::push(TokenType t, GherkinLexer& l)
 	{
 		tokens.push_back({ t, l });
@@ -253,7 +256,7 @@ namespace Gherkin {
 		return json;
 	}
 
-	Gherkin::TokenType GherkinLine::type() const
+	Gherkin::TokenType GherkinLine::getType() const
 	{
 		return tokens.empty() ? TokenType::None : tokens.begin()->type;
 	}
@@ -320,7 +323,7 @@ namespace Gherkin {
 	}
 
 	GherkinGroup::GherkinGroup(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), keyword(*line.getKeyword())
+		: GherkinElement(document, line), text(trim(line.getText()))
 	{
 	}
 
@@ -400,30 +403,44 @@ namespace Gherkin {
 	void GherkinDocument::addElement(GherkinLine& line)
 	{
 		GherkinElement* element = nullptr;
-		switch (currentLine->type()) {
-		case TokenType::Asterisk:
-			element = new GherkinGroup(*this, line);
-			break;
+		switch (currentLine->getType()) {
 		case TokenType::Keyword:
 			element = new GherkinStep(*this, line);
 			break;
+		case TokenType::Asterisk:
+		case TokenType::Operator:
+			element = new GherkinGroup(*this, line);
+			break;
+		case TokenType::Multiline:
+			//TODO: add multy line
+			return;
+		case TokenType::Table:
+			//TODO: add table
+			return;
 		default:
 			return;
 		}
-		//TODO: check element indents
+		if (element == nullptr) return;
 		auto indent = line.getIndent();
 		while (!elementStack.empty()) {
 			if (elementStack.back().first < indent) break;
 			elementStack.pop_back();
 		}
-		if (elementStack.empty()) throw u"Element statck is empty";
+		if (elementStack.empty()) {
+			delete element;
+			throw u"Element statck is empty";
+		}
 		elementStack.emplace_back(indent, element);
 		elementStack.back().second->push(element);
 	}
 
-	void GherkinDocument::next()
+	void GherkinDocument::next(GherkinLexer& l)
 	{
-		if (currentLine == nullptr) return;
+		if (currentLine == nullptr) {
+			auto lineNumber = l.lineno();
+			if (lineNumber > 1) lines.push_back(lineNumber);
+			return;
+		}
 		auto keyword = currentLine->matchKeyword(*this);
 		if (keyword) {
 			switch (keyword->type) {
@@ -444,7 +461,7 @@ namespace Gherkin {
 			}
 		}
 		else {
-			switch (currentLine->type()) {
+			switch (currentLine->getType()) {
 			case TokenType::Asterisk:
 				addElement(*currentLine);
 				break;

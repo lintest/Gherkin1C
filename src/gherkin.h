@@ -124,10 +124,12 @@ namespace Gherkin {
 		GherkinKeyword* matchKeyword(GherkinDocument& document);
 	public:
 		GherkinLine(GherkinLexer& l);
+		GherkinLine(size_t lineNumber);
 		void push(TokenType t, GherkinLexer& l);
 		GherkinKeyword* getKeyword() const { return keyword.get(); }
 		size_t getLineNumber() const { return lineNumber; }
-		TokenType type() const;
+		std::string getText() const { return text; }
+		TokenType getType() const;
 		int getIndent() const;
 		operator JSON() const;
 	};
@@ -172,8 +174,7 @@ namespace Gherkin {
 		: public GherkinElement {
 	private:
 		friend class GherkinDocument;
-		GherkinKeyword keyword;
-		std::vector<GherkinToken> tokens;
+		std::string text;
 	private:
 		GherkinGroup(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;
@@ -216,7 +217,7 @@ namespace Gherkin {
 		GherkinDocument() {}
 		std::string dump() const;
 		GherkinTags tags() const;
-		void next();
+		void next(GherkinLexer& l);
 		void push(TokenType type, GherkinLexer& lexer);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);

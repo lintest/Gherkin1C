@@ -9,7 +9,7 @@ private:
   GherkinDocument document;
 public:
   void next() {
-    document.next();
+    document.next(*this);
   }
   void push(TokenType type) {
     document.push(type, *this);
