@@ -385,12 +385,12 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
+	GherkinFeature::GherkinFeature(GherkinDocument& document, const GherkinLine& line)
 		: GherkinElement(document, line), keyword(*line.getKeyword())
 	{
 	}
 
-	GherkinDefinition::operator JSON() const
+	GherkinFeature::operator JSON() const
 	{
 		JSON json = GherkinElement::operator JSON();
 
@@ -402,6 +402,19 @@ namespace Gherkin {
 
 		json["keyword"] = keyword;
 
+		return json;
+	}
+
+	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
+		: GherkinElement(document, line), keyword(*line.getKeyword())
+	{
+	}
+
+	GherkinDefinition::operator JSON() const
+	{
+		JSON json = GherkinElement::operator JSON();
+		json["keyword"] = keyword;
+		json["tokens"] = tokens;
 		return json;
 	}
 
@@ -445,7 +458,7 @@ namespace Gherkin {
 		elementStack.emplace_back(-1, &element);
 	}
 
-	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLine& line)
+	void GherkinDocument::setElement(std::unique_ptr<GherkinElement>& definition, GherkinLine& line)
 	{
 		if (definition) {
 			auto keyword = line.getKeyword();
