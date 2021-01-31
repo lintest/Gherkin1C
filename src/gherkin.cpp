@@ -228,6 +228,8 @@ namespace Gherkin {
 	GherkinLine::GherkinLine(GherkinLexer& l)
 		: lineNumber(l.lineno()), text(l.matcher().line())
 	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		wstr = converter.from_bytes(text);
 	}
 
 	GherkinLine::GherkinLine(size_t lineNumber)
@@ -287,6 +289,7 @@ namespace Gherkin {
 	}
 
 	GherkinTable::GherkinTable(const GherkinLine& line)
+		: lineNumber(line.getLineNumber())
 	{
 		for (auto& token : line.getTokens()) {
 			if (token.getType() == TokenType::Cell)
@@ -307,13 +310,14 @@ namespace Gherkin {
 	GherkinTable::operator JSON() const
 	{
 		JSON json;
+		json["line"] = lineNumber;
 		json["head"] = head;
 		json["body"] = body;
 		return json;
 	}
 
 	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& line)
-		: lineNumber(line.getLineNumber())
+		: wstr(line.getWstr()), text(line.getText()), lineNumber(line.getLineNumber())
 	{
 		comments = std::move(document.commentStack);
 		tags = std::move(document.tagStack);
@@ -345,29 +349,50 @@ namespace Gherkin {
 
 	GherkinDefinition::operator JSON() const
 	{
-		JSON json;
+		JSON json, js;
+		for (auto item : items)
+			js.push_back(JSON(*item));
+
+		json["name"] = name;
+		json["text"] = text;
+		json["line"] = lineNumber;
+		json["description"] = description;
+		json["keyword"] = keyword;
+		json["tables"] = tables;
+		json["items"] = js;
 		return json;
 	}
 
 	GherkinStep::GherkinStep(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), keyword(*line.getKeyword())
+		: GherkinElement(document, line), keyword(*line.getKeyword()), tokens(line.getTokens())
 	{
 	}
 
 	GherkinStep::operator JSON() const
 	{
-		JSON json;
+		JSON json, js;
+		json["text"] = text;
+		json["line"] = lineNumber;
+		json["keyword"] = keyword;
+		json["tokens"] = tokens;
+		json["tables"] = tables;
 		return json;
 	}
 
 	GherkinGroup::GherkinGroup(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), text(trim(line.getText()))
+		: GherkinElement(document, line), name(trim(line.getText()))
 	{
 	}
 
 	GherkinGroup::operator JSON() const
 	{
-		JSON json;
+		JSON json, js;
+		for (auto item : items)
+			js.push_back(JSON(*item));
+
+		json["name"] = name;
+		json["text"] = text;
+		json["line"] = lineNumber;
 		return json;
 	}
 
@@ -386,16 +411,16 @@ namespace Gherkin {
 		elementStack.emplace_back(-1, &element);
 	}
 
-	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line)
+	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLine& line)
 	{
-		if (def) {
+		if (definition) {
 			std::string type = GherkinKeyword::type2str(line.getKeyword()->type);
 			error(line, type + " keyword duplicate error");
 		}
 		else {
-			auto definition = new GherkinDefinition(*this, line);
-			feature.reset(definition);
-			resetElementStack(*definition);
+			auto def = new GherkinDefinition(*this, line);
+			definition.reset(def);
+			resetElementStack(*def);
 		}
 	}
 
@@ -480,15 +505,17 @@ namespace Gherkin {
 			if (elementStack.empty()) {
 				throw u"Element statck is empty";
 			}
-			elementStack.emplace_back(indent, element.get());
-			elementStack.back().second->push(element.release());
+			lastElement = element.release();
+			auto parent = elementStack.back().second;
+			elementStack.emplace_back(indent, lastElement);
+			parent->push(lastElement);
 		}
 	}
 
 	void GherkinDocument::processLine(GherkinLine& line)
 	{
 		if (line.getType() != TokenType::Table)
-			currentTable == nullptr;
+			currentTable = nullptr;
 
 		auto keyword = line.matchKeyword(*this);
 		if (keyword) {
@@ -553,5 +580,25 @@ namespace Gherkin {
 	GherkinTags GherkinDocument::tags() const
 	{
 		return feature ? feature->tags : GherkinTags();
+	}
+
+	GherkinDocument::operator JSON() const
+	{
+		JSON json;
+		json["language"] = language;
+
+		if (feature) 
+			json["feature"] = JSON(*feature);
+
+		if (outline) 
+			json["outline"] = JSON(*outline);
+
+		if (backround) 
+			json["backround"] = JSON(*backround);
+		
+		if (!scenarios.empty()) 
+			json["scenarios"] = JSON(scenarios);
+
+		return json.dump();
 	}
 }

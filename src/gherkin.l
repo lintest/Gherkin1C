@@ -22,7 +22,7 @@ public:
     return document.tags();
   }
   std::string dump() const {
-    return document.dump();
+    return (JSON)document;
   }
 }
 

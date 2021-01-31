@@ -116,6 +116,7 @@ namespace Gherkin {
 
 	class GherkinLine {
 	private:
+		std::wstring wstr;
 		GherkinTokens tokens;
 		std::string text;
 		size_t lineNumber;
@@ -129,6 +130,7 @@ namespace Gherkin {
 		const GherkinTokens getTokens() const { return tokens; }
 		const GherkinKeyword* getKeyword() const { return keyword.get(); }
 		size_t getLineNumber() const { return lineNumber; }
+		std::wstring getWstr() const { return wstr; }
 		std::string getText() const { return text; }
 		TokenType getType() const;
 		int getIndent() const;
@@ -138,6 +140,7 @@ namespace Gherkin {
 	class GherkinTable {
 	public:
 	private:
+		size_t lineNumber;
 		std::vector<std::string> head;
 		std::vector<std::vector<std::string>> body;
 	public:
@@ -148,6 +151,8 @@ namespace Gherkin {
 
 	class GherkinElement {
 	protected:
+		std::wstring wstr;
+		std::string text;
 		size_t lineNumber;
 		GherkinTags tags;
 		GherkinComments comments;
@@ -177,7 +182,7 @@ namespace Gherkin {
 		: public GherkinElement {
 	private:
 		friend class GherkinDocument;
-		std::string text;
+		std::string name;
 	private:
 		GherkinGroup(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;
@@ -228,6 +233,7 @@ namespace Gherkin {
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		std::string getLanguage() const { return language; }
+		operator JSON() const;
 	};
 }
 
