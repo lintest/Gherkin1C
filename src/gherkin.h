@@ -209,6 +209,7 @@ namespace Gherkin {
 		std::vector<GherkinDefinition> scenarios;
 	private:
 		void setLanguage(GherkinLexer& lexer);
+		void processLine(GherkinLine& line);
 		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line);
 		void addScenarioDefinition(GherkinLine& line);
 		void resetElementStack(GherkinElement& element);

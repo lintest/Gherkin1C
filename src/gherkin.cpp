@@ -353,7 +353,6 @@ namespace Gherkin {
 		if (def) {
 			std::string type = GherkinKeyword::type2str(line.keyword->type);
 			error(line, type + " keyword duplicate error");
-			error(line, type + " keyword duplicate error");
 		}
 		else {
 			auto definition = new GherkinDefinition(*this, line);
@@ -414,63 +413,74 @@ namespace Gherkin {
 			break;
 		case TokenType::Multiline:
 			//TODO: add multy line
-			return;
+			break;
 		case TokenType::Table:
 			//TODO: add table
-			return;
+			break;
 		default:
-			return;
+			break;
 		}
-		if (element == nullptr) return;
-		auto indent = line.getIndent();
-		while (!elementStack.empty()) {
-			if (elementStack.back().first < indent) break;
-			elementStack.pop_back();
+		if (element) {
+			auto indent = line.getIndent();
+			while (!elementStack.empty()) {
+				if (elementStack.back().first < indent) break;
+				elementStack.pop_back();
+			}
+			if (elementStack.empty()) {
+				throw u"Element statck is empty";
+			}
+			elementStack.emplace_back(indent, element.get());
+			elementStack.back().second->push(element.release());
 		}
-		if (elementStack.empty()) {
-			throw u"Element statck is empty";
-		}
-		elementStack.emplace_back(indent, element.get());
-		elementStack.back().second->push(element.release());
 	}
 
-	void GherkinDocument::next(GherkinLexer& l)
+	void GherkinDocument::processLine(GherkinLine& line)
 	{
-		if (currentLine == nullptr) {
-			auto lineNumber = l.lineno();
-			if (lineNumber > 1) lines.push_back(lineNumber);
-			return;
-		}
-		auto keyword = currentLine->matchKeyword(*this);
+		auto keyword = line.matchKeyword(*this);
 		if (keyword) {
 			switch (keyword->type) {
 			case KeywordType::Feature:
-				setDefinition(feature, *currentLine);
+				setDefinition(feature, line);
 				break;
 			case KeywordType::ScenarioOutline:
-				setDefinition(outline, *currentLine);
+				setDefinition(outline, line);
 				break;
 			case KeywordType::Background:
-				setDefinition(backround, *currentLine);
+				setDefinition(backround, line);
 				break;
 			case KeywordType::Scenario:
-				addScenarioDefinition(*currentLine);
+				addScenarioDefinition(line);
 				break;
 			default:
-				addElement(*currentLine);
+				addElement(line);
 			}
 		}
 		else {
-			switch (currentLine->getType()) {
+			switch (line.getType()) {
 			case TokenType::Asterisk:
 			case TokenType::Operator:
 			case TokenType::Symbol:
-				addElement(*currentLine);
+			case TokenType::Multiline:
+			case TokenType::Table:
+				addElement(line);
 				break;
 			}
 			//TODO: add tables and multiline string to lastElement
 		}
-		currentLine = nullptr;
+	}
+
+	void GherkinDocument::next(GherkinLexer& l)
+	{
+		if (currentLine) {
+			processLine(*currentLine);
+			currentLine = nullptr;
+		}
+		else {
+			auto lineNumber = l.lineno();
+			if (lineNumber > 1) 
+				lines.push_back(lineNumber);
+			return;
+		}
 	}
 
 	std::string GherkinDocument::dump() const
