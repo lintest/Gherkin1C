@@ -388,6 +388,13 @@ namespace Gherkin {
 	GherkinFeature::GherkinFeature(GherkinDocument& document, const GherkinLine& line)
 		: GherkinDefinition(document, line), keyword(*line.getKeyword())
 	{
+		std::string text = line.getText();
+		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
+		static const reflex::Pattern pattern(regex);
+		auto matcher = reflex::Matcher(pattern, text);
+		if (matcher.find() && matcher.size() < text.size()) {
+			name = trim(text.substr(matcher.size()));
+		}
 	}
 
 	GherkinFeature::operator JSON() const
