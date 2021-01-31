@@ -18,9 +18,6 @@ public:
     current_token = type;
     start(TAIL);
   }
-  GherkinTags tags() const {
-    return document.tags();
-  }
   std::string dump() const {
     return (JSON)document;
   }

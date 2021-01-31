@@ -592,13 +592,14 @@ namespace Gherkin {
 			js.push_back(line);
 		}
 		json["lines"] = js;
-		json["tags"] = tags();
+		json["tags"] = getTags();
 		return json.dump();
 	}
 
-	GherkinTags GherkinDocument::tags() const
+	const GherkinTags& GherkinDocument::getTags() const
 	{
-		return feature ? feature->tags : GherkinTags();
+		static const GherkinTags empty;
+		return feature ? feature->getTags() : empty;
 	}
 
 	GherkinDocument::operator JSON() const

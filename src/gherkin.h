@@ -163,13 +163,13 @@ namespace Gherkin {
 		virtual ~GherkinElement();
 		GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
+		const GherkinTags& getTags() const { return tags; } 
 		virtual operator JSON() const;
 	};
 
 	class GherkinDefinition
 		: public GherkinElement {
 	private:
-		friend class GherkinDocument;
 		std::string name;
 		std::string description;
 		GherkinKeyword keyword;
@@ -225,12 +225,12 @@ namespace Gherkin {
 	public:
 		GherkinDocument() {}
 		std::string dump() const;
-		GherkinTags tags() const;
 		void next(GherkinLexer& l);
 		void push(TokenType type, GherkinLexer& lexer);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
-		std::string getLanguage() const { return language; }
+		const std::string& getLanguage() const { return language; }
+		const GherkinTags& getTags() const;
 		operator JSON() const;
 	};
 }
