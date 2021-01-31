@@ -386,7 +386,7 @@ namespace Gherkin {
 	}
 
 	GherkinFeature::GherkinFeature(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), keyword(*line.getKeyword())
+		: GherkinDefinition(document, line), keyword(*line.getKeyword())
 	{
 	}
 
@@ -458,7 +458,7 @@ namespace Gherkin {
 		elementStack.emplace_back(-1, &element);
 	}
 
-	void GherkinDocument::setElement(std::unique_ptr<GherkinElement>& definition, GherkinLine& line)
+	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLine& line)
 	{
 		if (definition) {
 			auto keyword = line.getKeyword();
@@ -470,7 +470,10 @@ namespace Gherkin {
 				error(line, "Unknown keyword type");
 		}
 		else {
-			auto def = new GherkinDefinition(*this, line);
+			GherkinDefinition* def = 
+				line.getKeyword()->getType() == KeywordType::Feature
+				? (GherkinDefinition*) new GherkinFeature(*this, line)
+				: new GherkinDefinition(*this, line);
 			definition.reset(def);
 			resetElementStack(*def);
 		}

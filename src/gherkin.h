@@ -167,17 +167,6 @@ namespace Gherkin {
 		virtual operator JSON() const;
 	};
 
-	class GherkinFeature
-		: public GherkinElement {
-	private:
-		std::string name;
-		std::string description;
-		GherkinKeyword keyword;
-	public:
-		GherkinFeature(GherkinDocument& document, const GherkinLine& line);
-		virtual operator JSON() const override;
-	};
-
 	class GherkinDefinition
 		: public GherkinElement {
 	private:
@@ -185,6 +174,17 @@ namespace Gherkin {
 		GherkinTokens tokens;
 	public:
 		GherkinDefinition(GherkinDocument& document, const GherkinLine& line);
+		virtual operator JSON() const override;
+	};
+
+	class GherkinFeature
+		: public GherkinDefinition {
+	private:
+		std::string name;
+		std::string description;
+		GherkinKeyword keyword;
+	public:
+		GherkinFeature(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
 
@@ -220,14 +220,14 @@ namespace Gherkin {
 	private:
 		std::vector<GherkinLine> lines;
 		std::string language;
-		std::unique_ptr<GherkinFeature> feature;
+		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> backround;
 		std::vector<GherkinDefinition> scenarios;
 	private:
 		void setLanguage(GherkinLexer& lexer);
 		void processLine(GherkinLine& line);
-		void setElement(std::unique_ptr<GherkinElement>& def, GherkinLine& line);
+		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line);
 		void addScenarioDefinition(GherkinLine& line);
 		void resetElementStack(GherkinElement& element);
 		void addTableLine(GherkinLine& line);
