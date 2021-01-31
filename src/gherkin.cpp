@@ -224,10 +224,14 @@ namespace Gherkin {
 	}
 
 	GherkinLine::GherkinLine(GherkinLexer& l)
-		: lineNumber(l.lineno()) {}
+		: lineNumber(l.lineno()), text(l.matcher().line())
+	{
+	}
 
 	GherkinLine::GherkinLine(size_t lineNumber)
-		: lineNumber(lineNumber) {}
+		: lineNumber(lineNumber)
+	{
+	}
 
 	void GherkinLine::push(TokenType t, GherkinLexer& l)
 	{
@@ -267,7 +271,7 @@ namespace Gherkin {
 		const int tabSize = 4;
 		for (auto ch : text) {
 			switch (ch) {
-			case ' ': 
+			case ' ':
 				indent++;
 				break;
 			case '\t':
@@ -383,7 +387,6 @@ namespace Gherkin {
 		if (currentLine == nullptr) {
 			lines.push_back({ l });
 			currentLine = &lines.back();
-			currentLine->text = l.matcher().line();
 		}
 		currentLine->push(t, l);
 		switch (t) {
@@ -436,6 +439,9 @@ namespace Gherkin {
 
 	void GherkinDocument::processLine(GherkinLine& line)
 	{
+		if (line.getType() != TokenType::Table)
+			currentTable == nullptr;
+
 		auto keyword = line.matchKeyword(*this);
 		if (keyword) {
 			switch (keyword->type) {
@@ -477,8 +483,10 @@ namespace Gherkin {
 		}
 		else {
 			auto lineNumber = l.lineno();
-			if (lineNumber > 1) 
-				lines.push_back(lineNumber);
+			if (lineNumber > 1) {
+				lines.push_back({ lineNumber });
+				processLine(lines.back());
+			}
 			return;
 		}
 	}

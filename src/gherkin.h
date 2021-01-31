@@ -196,6 +196,7 @@ namespace Gherkin {
 		friend class GherkinElement;
 		friend class GherkinDefinition;
 		GherkinLine* currentLine = nullptr;
+		GherkinTable* currentTable = nullptr;
 		GherkinTags tagStack;
 		GherkinComments commentStack;
 		GherkinElement* lastElement = nullptr;
