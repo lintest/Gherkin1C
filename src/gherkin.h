@@ -48,15 +48,16 @@ namespace Gherkin {
 		None
 	};
 
-	using GherkinTags = std::vector<std::string>;
-	using GherkinComments = std::vector<std::string>;
-
 	class GherkinProvider;
 	class GherkinDocument;
 	class GherkinDefinition;
 	class GherkinKeyword;
 	class GherkinToken;
 	class GherkinLine;
+
+	using GherkinTags = std::vector<std::string>;
+	using GherkinComments = std::vector<std::string>;
+	using GherkinTokens = std::vector<GherkinToken>;
 
 	class GherkinProvider {
 	public:
@@ -69,14 +70,14 @@ namespace Gherkin {
 		public:
 			Keyword(KeywordType type, const std::string& text);
 			bool comp(const Keyword& other) const { return words.size() > other.words.size(); }
-			GherkinKeyword* match(GherkinLine& line);
+			GherkinKeyword* match(GherkinTokens& tokens);
 		};
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
 	private:
 		static Keywords keywords;
 	public:
 		static void setKeywords(const std::string& text);
-		static GherkinKeyword* matchKeyword(const std::string& lang, GherkinLine& line);
+		static GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line);
 		static std::string ParseFile(const std::wstring& filename);
 	};
 
@@ -113,20 +114,18 @@ namespace Gherkin {
 
 	class GherkinLine {
 	private:
-		friend class GherkinProvider;
-		friend class GherkinDocument;
-		friend class GherkinKeyword;
-		std::vector<GherkinToken> tokens;
+		GherkinTokens tokens;
 		std::string text;
 		size_t lineNumber;
 	private:
 		std::unique_ptr<GherkinKeyword> keyword;
-		GherkinKeyword* matchKeyword(GherkinDocument& document);
 	public:
 		GherkinLine(GherkinLexer& l);
 		GherkinLine(size_t lineNumber);
 		void push(TokenType t, GherkinLexer& l);
-		GherkinKeyword* getKeyword() const { return keyword.get(); }
+		GherkinKeyword* matchKeyword(GherkinDocument& document);
+		const GherkinTokens getTokens() const { return tokens; }
+		const GherkinKeyword* getKeyword() const { return keyword.get(); }
 		size_t getLineNumber() const { return lineNumber; }
 		std::string getText() const { return text; }
 		TokenType getType() const;
@@ -143,6 +142,10 @@ namespace Gherkin {
 	private:
 		std::vector<Column> columns;
 		std::vector<std::vector<Cell>> cells;
+	public:
+		GherkinTable(const GherkinLine& line);
+		void push(const GherkinLine& line);
+		operator JSON() const;
 	};
 
 	class GherkinElement {
@@ -185,7 +188,7 @@ namespace Gherkin {
 	private:
 		friend class GherkinDocument;
 		GherkinKeyword keyword;
-		std::vector<GherkinToken> tokens;
+		GherkinTokens tokens;
 	private:
 		GherkinStep(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;

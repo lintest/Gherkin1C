@@ -64,16 +64,18 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinKeyword* GherkinProvider::Keyword::match(GherkinLine& line)
+	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens)
 	{
-		if (words.size() > line.tokens.size()) return nullptr;
+		if (words.size() > tokens.size()) 
+			return nullptr;
+
 		for (size_t i = 0; i < words.size(); ++i) {
-			if (line.tokens[i].type != TokenType::Operator) return nullptr;
-			if (!comparei(words[i], line.tokens[i].wstr)) return nullptr;
+			if (tokens[i].type != TokenType::Operator) return nullptr;
+			if (!comparei(words[i], tokens[i].wstr)) return nullptr;
 		}
 		bool toplevel = false;
 		size_t keynum = words.end() - words.begin();
-		for (auto& t : line.tokens) {
+		for (auto& t : tokens) {
 			if (keynum > 0) {
 				t.type = TokenType::Keyword;
 				keynum--;
@@ -113,11 +115,11 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinLine& line)
+	GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinTokens& tokens)
 	{
 		std::string language = lang.empty() ? std::string("ru") : lang;
 		for (auto& keyword : keywords[language]) {
-			auto matched = keyword.match(line);
+			auto matched = keyword.match(tokens);
 			if (matched) return matched;
 		}
 		return nullptr;
@@ -242,7 +244,7 @@ namespace Gherkin {
 	{
 		if (tokens.size() == 0) return nullptr;
 		if (tokens.begin()->type != TokenType::Operator) return nullptr;
-		keyword.reset(GherkinProvider::matchKeyword(document.getLanguage(), *this));
+		keyword.reset(GherkinProvider::matchKeyword(document.getLanguage(), tokens));
 		//TODO: check does colon exists for top level keywords: Feature, Background, Scenario...
 		return keyword.get();
 	}
@@ -282,6 +284,22 @@ namespace Gherkin {
 			}
 		}
 		return INT_MAX;
+	}
+
+	GherkinTable::GherkinTable(const GherkinLine& line)
+	{
+		for (auto& token : line.getTokens()) {
+		}
+	}
+	
+	void GherkinTable::push(const GherkinLine& line)
+	{
+	}
+
+	GherkinTable::operator JSON() const
+	{
+		JSON json;
+		return json;
 	}
 
 	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& line)
@@ -355,7 +373,7 @@ namespace Gherkin {
 	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line)
 	{
 		if (def) {
-			std::string type = GherkinKeyword::type2str(line.keyword->type);
+			std::string type = GherkinKeyword::type2str(line.getKeyword()->type);
 			error(line, type + " keyword duplicate error");
 		}
 		else {
