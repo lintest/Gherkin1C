@@ -101,14 +101,16 @@ namespace Gherkin {
 	private:
 		std::string type2str() const;
 	public:
-		TokenType type;
 		std::wstring wstr;
 		std::string text;
+		TokenType type;
 		size_t column;
 	public:
 		GherkinToken(const GherkinToken& src)
 			: type(src.type), wstr(src.wstr), text(src.text), column(src.column) {}
 		GherkinToken(TokenType t, GherkinLexer& l);
+		std::string getText() const { return text; }
+		TokenType getType() const { return type; }
 		operator JSON() const;
 	};
 
@@ -135,13 +137,9 @@ namespace Gherkin {
 
 	class GherkinTable {
 	public:
-		class Column {
-		};
-		class Cell {
-		};
 	private:
-		std::vector<Column> columns;
-		std::vector<std::vector<Cell>> cells;
+		std::vector<std::string> head;
+		std::vector<std::vector<std::string>> body;
 	public:
 		GherkinTable(const GherkinLine& line);
 		void push(const GherkinLine& line);
@@ -154,10 +152,12 @@ namespace Gherkin {
 		GherkinTags tags;
 		GherkinComments comments;
 		std::vector<GherkinElement*> items;
+		std::vector<GherkinTable> tables;
 	public:
 		GherkinElement(GherkinDocument& document, const GherkinLine& line);
 		virtual ~GherkinElement();
 		void push(GherkinElement* item);
+		GherkinTable* pushTable(const GherkinLine& line);
 		virtual operator JSON() const = 0;
 	};
 
@@ -217,6 +217,7 @@ namespace Gherkin {
 		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line);
 		void addScenarioDefinition(GherkinLine& line);
 		void resetElementStack(GherkinElement& element);
+		void addTableLine(GherkinLine& line);
 		void addElement(GherkinLine& line);
 	public:
 		GherkinDocument() {}

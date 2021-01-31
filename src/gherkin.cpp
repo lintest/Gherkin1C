@@ -289,16 +289,26 @@ namespace Gherkin {
 	GherkinTable::GherkinTable(const GherkinLine& line)
 	{
 		for (auto& token : line.getTokens()) {
+			if (token.getType() == TokenType::Cell)
+				head.push_back(token.getText());
 		}
 	}
 	
 	void GherkinTable::push(const GherkinLine& line)
 	{
+		body.push_back({});
+		auto& row = body.back();
+		for (auto& token : line.getTokens()) {
+			if (token.getType() == TokenType::Cell)
+				row.push_back(token.getText());
+		}
 	}
 
 	GherkinTable::operator JSON() const
 	{
 		JSON json;
+		json["head"] = head;
+		json["body"] = body;
 		return json;
 	}
 
@@ -320,6 +330,12 @@ namespace Gherkin {
 	void GherkinElement::push(GherkinElement* item)
 	{
 		items.push_back(item);
+	}
+
+	GherkinTable* GherkinElement::pushTable(const GherkinLine& line)
+	{
+		tables.emplace_back(line);
+		return &tables.back();
 	}
 
 	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
@@ -420,6 +436,20 @@ namespace Gherkin {
 		}
 	}
 
+	void GherkinDocument::addTableLine(GherkinLine& line)
+	{
+		if (lastElement) {
+			if (currentTable)
+				currentTable->push(line);
+			else {
+				currentTable = lastElement->pushTable(line);
+			}
+		} 
+		else {
+			//TODO: save error to error list
+		}
+	}
+
 	void GherkinDocument::addElement(GherkinLine& line)
 	{
 		std::unique_ptr<GherkinElement> element;
@@ -436,7 +466,7 @@ namespace Gherkin {
 			//TODO: add multy line
 			break;
 		case TokenType::Table:
-			//TODO: add table
+			addTableLine(line);
 			break;
 		default:
 			break;
