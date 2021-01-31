@@ -66,13 +66,17 @@ namespace Gherkin {
 
 	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens)
 	{
-		if (words.size() > tokens.size()) 
+		if (words.size() > tokens.size())
 			return nullptr;
 
 		for (size_t i = 0; i < words.size(); ++i) {
-			if (tokens[i].type != TokenType::Operator) return nullptr;
-			if (!comparei(words[i], tokens[i].wstr)) return nullptr;
+			if (tokens[i].type != TokenType::Operator)
+				return nullptr;
+
+			if (!comparei(words[i], tokens[i].wstr))
+				return nullptr;
 		}
+
 		bool toplevel = false;
 		size_t keynum = words.end() - words.begin();
 		for (auto& t : tokens) {
@@ -86,6 +90,7 @@ namespace Gherkin {
 				break;
 			}
 		}
+
 		return new GherkinKeyword(*this, toplevel);
 	}
 
@@ -138,7 +143,7 @@ namespace Gherkin {
 		lexer.lex();
 		fclose(file);
 		return lexer.dump();
-	}
+}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
 	{
@@ -293,17 +298,17 @@ namespace Gherkin {
 	{
 		for (auto& token : line.getTokens()) {
 			if (token.getType() == TokenType::Cell)
-				head.push_back(token.getText());
+				head.emplace_back(token.getText());
 		}
 	}
-	
+
 	void GherkinTable::push(const GherkinLine& line)
 	{
 		body.push_back({});
 		auto& row = body.back();
 		for (auto& token : line.getTokens()) {
 			if (token.getType() == TokenType::Cell)
-				row.push_back(token.getText());
+				row.emplace_back(token.getText());
 		}
 	}
 
@@ -331,9 +336,21 @@ namespace Gherkin {
 		items.clear();
 	}
 
-	void GherkinElement::push(GherkinElement* item)
+	GherkinElement* GherkinElement::push(GherkinDocument& document, const GherkinLine& line)
 	{
-		items.push_back(item);
+		GherkinElement* element = nullptr;
+		switch (line.getType()) {
+		case TokenType::Keyword:
+			element = new GherkinStep(document, line);
+			break;
+		case TokenType::Asterisk:
+		case TokenType::Operator:
+		case TokenType::Symbol:
+			element = new GherkinGroup(document, line);
+			break;
+		}
+		items.push_back(element);
+		return element;
 	}
 
 	GherkinTable* GherkinElement::pushTable(const GherkinLine& line)
@@ -377,7 +394,7 @@ namespace Gherkin {
 	{
 		JSON json = GherkinElement::operator JSON();
 
-		if (!name.empty()) 
+		if (!name.empty())
 			json["name"] = name;
 
 		if (!description.empty())
@@ -486,7 +503,7 @@ namespace Gherkin {
 			else {
 				currentTable = lastElement->pushTable(line);
 			}
-		} 
+		}
 		else {
 			//TODO: save error to error list
 		}
@@ -494,38 +511,19 @@ namespace Gherkin {
 
 	void GherkinDocument::addElement(GherkinLine& line)
 	{
-		std::unique_ptr<GherkinElement> element;
-		switch (currentLine->getType()) {
-		case TokenType::Keyword:
-			element.reset(new GherkinStep(*this, line));
-			break;
-		case TokenType::Asterisk:
-		case TokenType::Operator:
-		case TokenType::Symbol:
-			element.reset(new GherkinGroup(*this, line));
-			break;
-		case TokenType::Multiline:
-			//TODO: add multy line
-			break;
-		case TokenType::Table:
-			addTableLine(line);
-			break;
-		default:
-			break;
+		auto indent = line.getIndent();
+		while (!elementStack.empty()) {
+			if (elementStack.back().first < indent) break;
+			elementStack.pop_back();
 		}
+		if (elementStack.empty()) {
+			throw u"Element statck is empty";
+		}
+		auto parent = elementStack.back().second;
+		auto element = parent->push(*this, line);
 		if (element) {
-			auto indent = line.getIndent();
-			while (!elementStack.empty()) {
-				if (elementStack.back().first < indent) break;
-				elementStack.pop_back();
-			}
-			if (elementStack.empty()) {
-				throw u"Element statck is empty";
-			}
-			lastElement = element.release();
-			auto parent = elementStack.back().second;
-			elementStack.emplace_back(indent, lastElement);
-			parent->push(lastElement);
+			elementStack.emplace_back(indent, element);
+			lastElement = element;
 		}
 	}
 
@@ -558,9 +556,13 @@ namespace Gherkin {
 			case TokenType::Asterisk:
 			case TokenType::Operator:
 			case TokenType::Symbol:
-			case TokenType::Multiline:
-			case TokenType::Table:
 				addElement(line);
+				break;
+			case TokenType::Table:
+				addTableLine(line);
+				break;
+			case TokenType::Multiline:
+				//TODO: add multy line
 				break;
 			}
 			//TODO: add tables and multiline string to lastElement
@@ -604,16 +606,16 @@ namespace Gherkin {
 		JSON json;
 		json["language"] = language;
 
-		if (feature) 
+		if (feature)
 			json["feature"] = JSON(*feature);
 
-		if (outline) 
+		if (outline)
 			json["outline"] = JSON(*outline);
 
-		if (backround) 
+		if (backround)
 			json["backround"] = JSON(*backround);
-		
-		if (!scenarios.empty()) 
+
+		if (!scenarios.empty())
 			json["scenarios"] = JSON(scenarios);
 
 		return json.dump();

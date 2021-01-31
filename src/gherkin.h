@@ -161,7 +161,7 @@ namespace Gherkin {
 	public:
 		GherkinElement(GherkinDocument& document, const GherkinLine& line);
 		virtual ~GherkinElement();
-		void push(GherkinElement* item);
+		GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		virtual operator JSON() const;
 	};
@@ -181,9 +181,8 @@ namespace Gherkin {
 	class GherkinGroup
 		: public GherkinElement {
 	private:
-		friend class GherkinDocument;
 		std::string name;
-	private:
+	public:
 		GherkinGroup(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
@@ -191,10 +190,9 @@ namespace Gherkin {
 	class GherkinStep
 		: public GherkinElement{
 	private:
-		friend class GherkinDocument;
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
-	private:
+	public:
 		GherkinStep(GherkinDocument& document, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
