@@ -83,7 +83,6 @@ namespace Gherkin {
 
 	class GherkinKeyword {
 	private:
-		friend class GherkinDocument;
 		KeywordType type;
 		std::string text;
 		bool toplevel;
@@ -94,6 +93,7 @@ namespace Gherkin {
 			: type(source.type), text(source.text), toplevel(toplevel) {}
 		GherkinKeyword(const GherkinKeyword& source)
 			: type(source.type), text(source.text), toplevel(source.toplevel) {}
+		KeywordType getType() const { return type; }
 		operator JSON() const;
 	};
 

@@ -448,8 +448,13 @@ namespace Gherkin {
 	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLine& line)
 	{
 		if (definition) {
-			std::string type = GherkinKeyword::type2str(line.getKeyword()->type);
-			error(line, type + " keyword duplicate error");
+			auto keyword = line.getKeyword();
+			if (keyword) {
+				std::string type = GherkinKeyword::type2str(keyword->getType());
+				error(line, type + " keyword duplicate error");
+			}
+			else 
+				error(line, "Unknown keyword type");
 		}
 		else {
 			auto def = new GherkinDefinition(*this, line);
@@ -534,7 +539,7 @@ namespace Gherkin {
 
 		auto keyword = line.matchKeyword(*this);
 		if (keyword) {
-			switch (keyword->type) {
+			switch (keyword->getType()) {
 			case KeywordType::Feature:
 				setDefinition(feature, line);
 				break;
