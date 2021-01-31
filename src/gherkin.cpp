@@ -342,6 +342,32 @@ namespace Gherkin {
 		return &tables.back();
 	}
 
+	GherkinElement::operator JSON() const
+	{
+		JSON json;
+
+		json["line"] = lineNumber;
+		json["text"] = text;
+
+		if (!items.empty()) {
+			JSON js;
+			for (auto item : items)
+				js.push_back(JSON(*item));
+			json["items"] = js;
+		}
+
+		if (!tags.empty())
+			json["tags"] = tags;
+
+		if (!comments.empty())
+			json["comments"] = comments;
+
+		if (!tables.empty())
+			json["tables"] = tables;
+
+		return json;
+	}
+
 	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
 		: GherkinElement(document, line), keyword(*line.getKeyword())
 	{
@@ -349,17 +375,16 @@ namespace Gherkin {
 
 	GherkinDefinition::operator JSON() const
 	{
-		JSON json, js;
-		for (auto item : items)
-			js.push_back(JSON(*item));
+		JSON json = GherkinElement::operator JSON();
 
-		json["name"] = name;
-		json["text"] = text;
-		json["line"] = lineNumber;
-		json["description"] = description;
+		if (!name.empty()) 
+			json["name"] = name;
+
+		if (!description.empty())
+			json["description"] = description;
+
 		json["keyword"] = keyword;
-		json["tables"] = tables;
-		json["items"] = js;
+
 		return json;
 	}
 
@@ -370,12 +395,9 @@ namespace Gherkin {
 
 	GherkinStep::operator JSON() const
 	{
-		JSON json, js;
-		json["text"] = text;
-		json["line"] = lineNumber;
+		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
 		json["tokens"] = tokens;
-		json["tables"] = tables;
 		return json;
 	}
 
@@ -386,13 +408,8 @@ namespace Gherkin {
 
 	GherkinGroup::operator JSON() const
 	{
-		JSON json, js;
-		for (auto item : items)
-			js.push_back(JSON(*item));
-
+		JSON json = GherkinElement::operator JSON();
 		json["name"] = name;
-		json["text"] = text;
-		json["line"] = lineNumber;
 		return json;
 	}
 

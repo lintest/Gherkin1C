@@ -163,7 +163,7 @@ namespace Gherkin {
 		virtual ~GherkinElement();
 		void push(GherkinElement* item);
 		GherkinTable* pushTable(const GherkinLine& line);
-		virtual operator JSON() const = 0;
+		virtual operator JSON() const;
 	};
 
 	class GherkinDefinition
