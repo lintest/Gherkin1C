@@ -7,6 +7,30 @@ std::vector<std::u16string> GherkinParser::names = {
 
 GherkinParser::GherkinParser()
 {
-	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr, [&](VH value) { Gherkin::GherkinProvider::setKeywords(value); });
-	AddFunction(u"ParseFile", u"ПрочитатьФайл", [&](VH filename) {  this->result = Gherkin::GherkinProvider::ParseFile(filename); });
+	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr, 
+		[&](VH value) { Gherkin::GherkinProvider::setKeywords(value); }
+	);
+
+	AddFunction(u"ParseFile", u"ПрочитатьФайл", 
+		[&](VH filename) {  this->result = Gherkin::GherkinProvider::ParseFile(filename); }
+	);
+
+	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы",
+		[&](VH status) { this->ExitCurrentProcess(status); }, { {0, (int64_t)0 } }
+	);
 }
+
+#ifdef _WINDOWS
+
+void GherkinParser::ExitCurrentProcess(int64_t status)
+{
+	ExitProcess((UINT)status);
+}
+
+#else//_WINDOWS
+void GherkinParser::ExitCurrentProcess(int64_t status)
+{
+	exit((int)status);
+}
+
+#endif//_WINDOWS
