@@ -429,7 +429,10 @@ namespace Gherkin {
 	{
 		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
-		json["tokens"] = tokens;
+
+		if (!tokens.empty()) 
+			json["tokens"] = tokens;
+
 		return json;
 	}
 
@@ -442,7 +445,10 @@ namespace Gherkin {
 	{
 		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
-		json["tokens"] = tokens;
+
+		if (!tokens.empty()) 
+			json["tokens"] = tokens;
+
 		return json;
 	}
 
