@@ -12,5 +12,6 @@ private:
 	GherkinParser();
 private:
 	void ExitCurrentProcess(int64_t status);
+	std::string Parse(VH data);
 };
 #endif //__GHERKINPARSER_H__

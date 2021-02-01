@@ -130,20 +130,29 @@ namespace Gherkin {
 		return nullptr;
 	}
 
+	static std::string Parse(reflex::Input& input)
+	{
+		GherkinLexer lexer(input);
+		lexer.lex();
+		return lexer.dump();
+	}
+
 	std::string GherkinProvider::ParseFile(const std::wstring& filename)
 	{
 #ifdef _WINDOWS
-		FILE* file = _wfopen(filename.c_str(), L"rb");
+		std::unique_ptr<FILE, decltype(&fclose)> file(_wfopen(filename.c_str(), L"rb"), &fclose);
 #else//_WINDOWS
 		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		FILE* file = fopen(converter.to_bytes(filename).c_str(), "rb");
+		std::string str = converter.to_bytes(filename);
+		std::unique_ptr<FILE, decltype(&fclose)> file(fopen(str.c_str(), "rb"), &fclose);
 #endif//_WINDOWS
-		reflex::Input input = file;
-		GherkinLexer lexer(input);
-		lexer.lex();
-		fclose(file);
-		return lexer.dump();
-}
+		return ::Parse(reflex::Input(file.get()));
+	}
+
+	std::string GherkinProvider::Parse(const std::string& text)
+	{
+		return ::Parse(reflex::Input(text));
+	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
 	{
@@ -401,7 +410,7 @@ namespace Gherkin {
 
 	GherkinElement* GherkinFeature::push(GherkinDocument& document, const GherkinLine& line)
 	{
-		description.emplace_back(line.getText());
+		description.emplace_back(trim(line.getText()));
 		return nullptr;
 	}
 
@@ -430,7 +439,7 @@ namespace Gherkin {
 		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
 
-		if (!tokens.empty()) 
+		if (!tokens.empty())
 			json["tokens"] = tokens;
 
 		return json;
@@ -446,7 +455,7 @@ namespace Gherkin {
 		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
 
-		if (!tokens.empty()) 
+		if (!tokens.empty())
 			json["tokens"] = tokens;
 
 		return json;
@@ -487,11 +496,11 @@ namespace Gherkin {
 				std::string type = GherkinKeyword::type2str(keyword->getType());
 				error(line, type + " keyword duplicate error");
 			}
-			else 
+			else
 				error(line, "Unknown keyword type");
 		}
 		else {
-			GherkinDefinition* def = 
+			GherkinDefinition* def =
 				line.getKeyword()->getType() == KeywordType::Feature
 				? (GherkinDefinition*) new GherkinFeature(*this, line)
 				: new GherkinDefinition(*this, line);

@@ -79,6 +79,7 @@ namespace Gherkin {
 		static void setKeywords(const std::string& text);
 		static GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line);
 		static std::string ParseFile(const std::wstring& filename);
+		static std::string Parse(const std::string& text);
 	};
 
 	class GherkinKeyword {
@@ -163,7 +164,7 @@ namespace Gherkin {
 		virtual ~GherkinElement();
 		virtual GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
-		const GherkinTags& getTags() const { return tags; } 
+		const GherkinTags& getTags() const { return tags; }
 		virtual operator JSON() const;
 	};
 
@@ -199,7 +200,7 @@ namespace Gherkin {
 	};
 
 	class GherkinStep
-		: public GherkinElement{
+		: public GherkinElement {
 	private:
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
