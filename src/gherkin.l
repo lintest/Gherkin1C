@@ -14,7 +14,7 @@ public:
   void push(TokenType type) {
     document.push(type, *this);
   }
-  void till(TokenType type) {
+  void tail(TokenType type) {
     current_token = type;
     start(TAIL);
   }
@@ -24,6 +24,7 @@ public:
 }
 
 %option fast nodefault unicode
+%xstate LINE
 %xstate TAG
 %xstate TAIL
 %xstate TABLE
@@ -52,20 +53,26 @@ tag           @
 
 <INITIAL>{new_line}   { next(); start(INITIAL); }
 <INITIAL>{space}      // ignore
-<INITIAL>{language}   { till(TokenType::Language); }
-<INITIAL>{encoding}   { till(TokenType::Encoding); }
-<INITIAL>{asterisk}   { till(TokenType::Asterisk); }
-<INITIAL>{comment}    { till(TokenType::Comment); }
-<INITIAL>{tag}        { till(TokenType::Tag); }
-<INITIAL>{colon}      { push(TokenType::Colon); }
-<INITIAL>{operator}   { push(TokenType::Operator); }
-<INITIAL>{param}      { push(TokenType::Param); }
-<INITIAL>{date}       { push(TokenType::Date); }
-<INITIAL>{number}     { push(TokenType::Number); }
-<INITIAL>{table}      { push(TokenType::Table); start(TABLE); }
-<INITIAL>{str_a}      { push(TokenType::Multiline); start(STR_A); }
-<INITIAL>{str_d}      { push(TokenType::Multiline); start(STR_D); }
-<INITIAL>.            { push(TokenType::Symbol); }
+<INITIAL>{asterisk}   { tail(TokenType::Asterisk); }
+<INITIAL>{language}   { tail(TokenType::Language); }
+<INITIAL>{encoding}   { tail(TokenType::Encoding); }
+<INITIAL>{comment}    { tail(TokenType::Comment); }
+<INITIAL>{tag}        { tail(TokenType::Tag); }
+<INITIAL>{operator}   { start(LINE);  push(TokenType::Operator); }
+<INITIAL>{table}      { start(TABLE); push(TokenType::Table); }
+<INITIAL>{str_a}      { start(STR_A); push(TokenType::Multiline); }
+<INITIAL>{str_d}      { start(STR_D); push(TokenType::Multiline); }
+<INITIAL>.            { start(LINE);  push(TokenType::Symbol); }
+
+<LINE>{new_line}      { next(); start(INITIAL); }
+<LINE>{space}         // ignore
+<LINE>{comment}       { tail(TokenType::Comment); }
+<LINE>{operator}      { push(TokenType::Operator); }
+<LINE>{colon}         { push(TokenType::Colon); }
+<LINE>{param}         { push(TokenType::Param); }
+<LINE>{date}          { push(TokenType::Date); }
+<LINE>{number}        { push(TokenType::Number); }
+<LINE>.               { push(TokenType::Symbol); }
 
 <TAIL>{new_line}      { next(); start(INITIAL); }
 <TAIL>{text}          { push(current_token); }
