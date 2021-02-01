@@ -348,6 +348,8 @@ namespace Gherkin {
 		case TokenType::Symbol:
 			element = new GherkinGroup(document, line);
 			break;
+		default:
+			return nullptr;
 		}
 		items.push_back(element);
 		return element;
@@ -395,6 +397,12 @@ namespace Gherkin {
 		if (matcher.find() && matcher.size() < text.size()) {
 			name = trim(text.substr(matcher.size()));
 		}
+	}
+
+	GherkinElement* GherkinFeature::push(GherkinDocument& document, const GherkinLine& line)
+	{
+		description.emplace_back(line.getText());
+		return nullptr;
 	}
 
 	GherkinFeature::operator JSON() const
@@ -593,7 +601,6 @@ namespace Gherkin {
 				//TODO: add multy line
 				break;
 			}
-			//TODO: add tables and multiline string to lastElement
 		}
 	}
 

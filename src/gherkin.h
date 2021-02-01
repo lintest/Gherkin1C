@@ -161,7 +161,7 @@ namespace Gherkin {
 	public:
 		GherkinElement(GherkinDocument& document, const GherkinLine& line);
 		virtual ~GherkinElement();
-		GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; } 
 		virtual operator JSON() const;
@@ -181,10 +181,11 @@ namespace Gherkin {
 		: public GherkinDefinition {
 	private:
 		std::string name;
-		std::string description;
+		std::vector<std::string> description;
 		GherkinKeyword keyword;
 	public:
 		GherkinFeature(GherkinDocument& document, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinDocument& document, const GherkinLine& line) override;
 		virtual operator JSON() const override;
 	};
 
