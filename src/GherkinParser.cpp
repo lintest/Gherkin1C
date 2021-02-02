@@ -44,6 +44,7 @@ std::string GherkinParser::Parse(VH var)
 	if (var.type() == VTYPE_PWSTR) {
 		std:: string text = var;
 		return Gherkin::GherkinProvider::Parse(text);
+	}
 	else
 		return {};
 }
