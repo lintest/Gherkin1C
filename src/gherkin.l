@@ -38,7 +38,7 @@ asterisk      \*
 operator      \w+
 number        -?(\\d*\\.)?\\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
-param         \"[^\"\n\r]*\"|'[^'\n\r]*'|<[^>\n\r]*>
+param         \"([^\"\n\r]|\\\")*\"|'([^'\n\r]|\\')*'|<([^>\n\r]|\\>)*>
 comment       #|\/\/
 space         \h+
 colon         :
