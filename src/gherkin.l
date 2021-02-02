@@ -11,8 +11,8 @@ public:
   void next() {
     document.next(*this);
   }
-  void push(TokenType type) {
-    document.push(type, *this);
+  void push(TokenType tt, char ch = 0) {
+    document.push(*this, tt, ch);
   }
   void tail(TokenType type) {
     current_token = type;
@@ -36,9 +36,12 @@ language      #\s*(?i)(language)\s*:\s*
 encoding      #\s*(?i)(encoding)\s*:\s*
 asterisk      \*
 operator      \w+
-number        -?(\\d*\\.)?\\d+
+number        -?(\d*\.)?\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
-param         \"([^\"\n\r]|\\\")*\"|'([^'\n\r]|\\')*'|<([^>\n\r]|\\>)*>
+param_d       \"([^\\\"\n\r]|.)*\"
+param_a       `([^\\`\n\r]|.)*`
+param_b       <([^\\>\n\r]|.)*>
+param_s       '([^\\'\n\r]|.)*'
 comment       #|\/\/
 space         \h+
 colon         :
@@ -69,9 +72,12 @@ tag           @
 <LINE>{comment}       { tail(TokenType::Comment); }
 <LINE>{operator}      { push(TokenType::Operator); }
 <LINE>{colon}         { push(TokenType::Colon); }
-<LINE>{param}         { push(TokenType::Param); }
 <LINE>{date}          { push(TokenType::Date); }
 <LINE>{number}        { push(TokenType::Number); }
+<LINE>{param_a}       { push(TokenType::Param, '`'); }
+<LINE>{param_b}       { push(TokenType::Param, '>'); }
+<LINE>{param_d}       { push(TokenType::Param, '\"'); }
+<LINE>{param_s}       { push(TokenType::Param, '\''); }
 <LINE>.               { push(TokenType::Symbol); }
 
 <TAIL>{new_line}      { next(); start(INITIAL); }

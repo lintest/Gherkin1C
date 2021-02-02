@@ -41,15 +41,27 @@ static bool comparei(std::wstring a, std::wstring b)
 
 #endif//USE_BOOST
 
-static std::string trim(const std::string& text)
-{
-	static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
-	static const reflex::Pattern pattern(regex);
-	auto matcher = reflex::Matcher(pattern, text);
-	return matcher.find() ? matcher.text() : std::string();
-}
-
 namespace Gherkin {
+
+	static std::string trim(const std::string& text)
+	{
+		static const std::string regex = reflex::Matcher::convert("\\S[\\s\\S]*\\S|\\S", reflex::convert_flag::unicode);
+		static const reflex::Pattern pattern(regex);
+		auto matcher = reflex::Matcher(pattern, text);
+		return matcher.find() ? matcher.text() : std::string();
+	}
+
+	static std::string WC2MB(const std::wstring& wstr)
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.to_bytes(wstr);
+	}
+
+	static std::wstring MB2WC(const std::string& str)
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.from_bytes(str);
+	}
 
 	GherkinProvider::Keywords GherkinProvider::keywords;
 
@@ -200,17 +212,51 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinToken::GherkinToken(TokenType t, GherkinLexer& l)
-		: type(t), wstr(l.wstr()), text(l.text()), column(l.columno())
+	GherkinToken::GherkinToken(GherkinLexer& lexer, TokenType type, char ch)
+		: type(type), wstr(lexer.wstr()), text(lexer.text()), column(lexer.columno()), symbol(ch)
 	{
-		text = trim(text);
+		if (type == TokenType::Param && ch != 0) {
+			bool escaping = false;
+			std::wstringstream ss;
+			for (auto it = wstr.begin(); it != wstr.end(); ++it) {
+				if (it == wstr.begin() || (it + 1) == wstr.end())
+					continue;
+
+				if (escaping) {
+					escaping = false;
+					wchar_t wc = *it;
+					switch (wc) {
+					case L't': wc = L'\t'; break;
+					case L'n': wc = L'\n'; break;
+					case L'r': wc = L'\r'; break;
+					}
+					ss << wc;
+				}
+				else {
+					if (*it == L'\\')
+						escaping = true;
+					else
+						ss << *it;
+				}
+			}
+			wstr = ss.str();
+			text = WC2MB(wstr);
+		}
+		else {
+			text = trim(text);
+		}
 	};
 
 	GherkinToken::operator JSON() const
 	{
 		JSON json;
-		json["type"] = type2str();
 		json["text"] = text;
+		json["column"] = column;
+		json["type"] = type2str();
+
+		if (symbol != 0) 
+			json["symbol"] = std::string(1, symbol);
+
 		return json;
 	}
 
@@ -250,9 +296,9 @@ namespace Gherkin {
 	{
 	}
 
-	void GherkinLine::push(TokenType t, GherkinLexer& l)
+	void GherkinLine::push(GherkinLexer& lexer, TokenType type, char ch)
 	{
-		tokens.push_back({ t, l });
+		tokens.emplace_back( lexer, type, ch );
 	}
 
 	GherkinKeyword* GherkinLine::matchKeyword(GherkinDocument& document)
@@ -525,22 +571,22 @@ namespace Gherkin {
 		//TODO: save error to error list
 	}
 
-	void GherkinDocument::push(TokenType t, GherkinLexer& l)
+	void GherkinDocument::push(GherkinLexer& lexer, TokenType type, char ch)
 	{
 		if (currentLine == nullptr) {
-			lines.push_back({ l });
+			lines.push_back({ lexer });
 			currentLine = &lines.back();
 		}
-		currentLine->push(t, l);
-		switch (t) {
+		currentLine->push(lexer, type, ch);
+		switch (type) {
 		case TokenType::Language:
-			setLanguage(l);
+			setLanguage(lexer);
 			break;
 		case TokenType::Comment:
-			commentStack.push_back(l.text());
+			commentStack.push_back(lexer.text());
 			break;
 		case TokenType::Tag:
-			tagStack.push_back(l.text());
+			tagStack.push_back(lexer.text());
 			break;
 		}
 	}

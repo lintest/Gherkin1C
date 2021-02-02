@@ -106,10 +106,11 @@ namespace Gherkin {
 		std::string text;
 		TokenType type;
 		size_t column;
+		char symbol;
 	public:
 		GherkinToken(const GherkinToken& src)
-			: type(src.type), wstr(src.wstr), text(src.text), column(src.column) {}
-		GherkinToken(TokenType t, GherkinLexer& l);
+			: type(src.type), wstr(src.wstr), text(src.text), column(src.column), symbol(src.symbol) {}
+		GherkinToken(GherkinLexer& lexer, TokenType type, char ch);
 		std::string getText() const { return text; }
 		TokenType getType() const { return type; }
 		operator JSON() const;
@@ -126,7 +127,7 @@ namespace Gherkin {
 	public:
 		GherkinLine(GherkinLexer& l);
 		GherkinLine(size_t lineNumber);
-		void push(TokenType t, GherkinLexer& l);
+		void push(GherkinLexer& lexer, TokenType type, char ch);
 		GherkinKeyword* matchKeyword(GherkinDocument& document);
 		const GherkinTokens getTokens() const { return tokens; }
 		const GherkinKeyword* getKeyword() const { return keyword.get(); }
@@ -238,7 +239,7 @@ namespace Gherkin {
 		GherkinDocument() {}
 		std::string dump() const;
 		void next(GherkinLexer& l);
-		void push(TokenType type, GherkinLexer& lexer);
+		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		const std::string& getLanguage() const { return language; }
