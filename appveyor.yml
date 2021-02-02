@@ -119,6 +119,8 @@ for:
       - path: example.log
 
     environment:
+      APPVEYOR_RDP_PASSWORD:
+        secure: AcFmdVW2ETmUSvM6uhjHAA==
       KEY_1CV8T:
         secure: OolAVEKkEg1cGCpG/VK2FaM0LWrPgMR/Kn4nTLYyKR0=
 
