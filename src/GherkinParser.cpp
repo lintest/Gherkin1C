@@ -41,10 +41,9 @@ void GherkinParser::ExitCurrentProcess(int64_t status)
 
 std::string GherkinParser::Parse(VH var)
 {
-	switch (var.type()) {
-	case VTYPE_PWSTR:
-		return Gherkin::GherkinProvider::Parse(var);
-	default:
+	if (var.type() == VTYPE_PWSTR) {
+		std:: string text = var;
+		return Gherkin::GherkinProvider::Parse(text);
+	else
 		return {};
-	}
 }
