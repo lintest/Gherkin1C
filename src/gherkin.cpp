@@ -592,7 +592,7 @@ namespace Gherkin {
 				setDefinition(outline, line);
 				break;
 			case KeywordType::Background:
-				setDefinition(backround, line);
+				setDefinition(background, line);
 				break;
 			case KeywordType::Scenario:
 				addScenarioDefinition(line);
@@ -662,8 +662,8 @@ namespace Gherkin {
 		if (outline)
 			json["outline"] = JSON(*outline);
 
-		if (backround)
-			json["backround"] = JSON(*backround);
+		if (background)
+			json["background"] = JSON(*background);
 
 		if (!scenarios.empty())
 			json["scenarios"] = JSON(scenarios);

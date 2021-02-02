@@ -224,7 +224,7 @@ namespace Gherkin {
 		std::string language;
 		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> outline;
-		std::unique_ptr<GherkinDefinition> backround;
+		std::unique_ptr<GherkinDefinition> background;
 		std::vector<GherkinDefinition> scenarios;
 	private:
 		void setLanguage(GherkinLexer& lexer);
