@@ -146,12 +146,14 @@ namespace Gherkin {
 		std::string str = converter.to_bytes(filename);
 		std::unique_ptr<FILE, decltype(&fclose)> file(fopen(str.c_str(), "rb"), &fclose);
 #endif//_WINDOWS
-		return ::Parse(reflex::Input(file.get()));
+		reflex::Input input(file.get());
+		return ::Parse(input);
 	}
 
 	std::string GherkinProvider::Parse(const std::string& text)
 	{
-		return ::Parse(reflex::Input(text));
+		reflex::Input input(text);
+		return ::Parse(input);
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
