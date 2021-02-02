@@ -16,20 +16,24 @@ int main(int argc, char** argv)
 		input = stdin;
 	}
 
+	GherkinProvider provider;
+
 	if (argc > 2) {
 		std::ifstream fstream;
 		fstream.open(argv[2]);
 		std::string json((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
-		GherkinProvider::setKeywords(json);
+		provider.setKeywords(json);
 	}
 	else {
 		std::string json = R"({"en": {"simple": ["Then", "And", "Scenario Template"]}})";
-		GherkinProvider::setKeywords(json);
+		provider.setKeywords(json);
 	}
 
+	GherkinDocument doc(provider);
 	GherkinLexer lexer(input);
+	lexer.init(&doc);
 	lexer.lex();
-	std::cout << lexer.dump();
+	std::cout << JSON(doc).dump();
 
 	if (input.file() != stdin)
 		fclose(input.file());

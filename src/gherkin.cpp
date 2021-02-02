@@ -52,8 +52,6 @@ namespace Gherkin {
 		return matcher.find() ? matcher.text() : std::string();
 	}
 
-	GherkinProvider::Keywords GherkinProvider::keywords;
-
 	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string& text)
 		:type(type), text(text)
 	{
@@ -65,7 +63,7 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens)
+	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens) const
 	{
 		if (words.size() > tokens.size())
 			return nullptr;
@@ -121,17 +119,17 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinTokens& tokens)
+	GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinTokens& tokens) const
 	{
 		std::string language = lang.empty() ? std::string("ru") : lang;
-		for (auto& keyword : keywords[language]) {
+		for (auto& keyword : keywords.at(language)) {
 			auto matched = keyword.match(tokens);
 			if (matched) return matched;
 		}
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFile(const std::wstring& filename)
+	std::string GherkinProvider::ParseFile(const std::wstring& filename) const
 	{
 #ifdef _WINDOWS
 		std::unique_ptr<FILE, decltype(&fclose)> file(_wfopen(filename.c_str(), L"rb"), &fclose);
@@ -141,17 +139,21 @@ namespace Gherkin {
 		std::unique_ptr<FILE, decltype(&fclose)> file(fopen(str.c_str(), "rb"), &fclose);
 #endif//_WINDOWS
 		reflex::Input input(file.get());
+		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
+		lexer.init(&doc);
 		lexer.lex();
-		return lexer.dump();
+		return JSON(doc);
 	}
 
-	std::string GherkinProvider::Parse(const std::string& text)
+	std::string GherkinProvider::ParseText(const std::string& text) const
 	{
 		reflex::Input input(text);
+		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
+		lexer.init(&doc);
 		lexer.lex();
-		return lexer.dump();
+		return JSON(doc);
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
@@ -294,7 +296,7 @@ namespace Gherkin {
 	{
 		if (tokens.size() == 0) return nullptr;
 		if (tokens.begin()->type != TokenType::Operator) return nullptr;
-		keyword.reset(GherkinProvider::matchKeyword(document.getLanguage(), tokens));
+		keyword.reset(document.matchKeyword(tokens));
 		//TODO: check does colon exists for top level keywords: Feature, Background, Scenario...
 		return keyword.get();
 	}
@@ -567,6 +569,11 @@ namespace Gherkin {
 		scenarios.emplace_back(*this, line);
 		auto definition = &scenarios.back();
 		resetElementStack(*definition);
+	}
+
+	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
+	{
+		return provider.matchKeyword(language, line);
 	}
 
 	void GherkinDocument::exception(GherkinLexer& lexer, const char* message)

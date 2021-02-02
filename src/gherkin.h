@@ -70,16 +70,16 @@ namespace Gherkin {
 		public:
 			Keyword(KeywordType type, const std::string& text);
 			bool comp(const Keyword& other) const { return words.size() > other.words.size(); }
-			GherkinKeyword* match(GherkinTokens& tokens);
+			GherkinKeyword* match(GherkinTokens& tokens) const;
 		};
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
 	private:
-		static Keywords keywords;
+		Keywords keywords;
 	public:
-		static void setKeywords(const std::string& text);
-		static GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line);
-		static std::string ParseFile(const std::wstring& filename);
-		static std::string Parse(const std::string& text);
+		void setKeywords(const std::string& text);
+		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
+		std::string ParseFile(const std::wstring& filename) const;
+		std::string ParseText(const std::string& text) const;
 	};
 
 	class GherkinKeyword {
@@ -225,6 +225,7 @@ namespace Gherkin {
 	private:
 		friend class GherkinElement;
 		friend class GherkinDefinition;
+		const GherkinProvider& provider;
 		GherkinLine* currentLine = nullptr;
 		GherkinTable* currentTable = nullptr;
 		GherkinTags tagStack;
@@ -248,14 +249,14 @@ namespace Gherkin {
 		void addTableLine(GherkinLine& line);
 		void addElement(GherkinLine& line);
 	public:
-		GherkinDocument() {}
+		GherkinDocument(const GherkinProvider& provider): provider(provider) {}
 		std::string dump() const;
 		void next(GherkinLexer& l);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
 		void exception(GherkinLexer& lexer, const char* message);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
-		const std::string& getLanguage() const { return language; }
+		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		const GherkinTags& getTags() const;
 		operator JSON() const;
 	};

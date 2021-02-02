@@ -7,16 +7,18 @@ std::vector<std::u16string> GherkinParser::names = {
 
 GherkinParser::GherkinParser()
 {
+	provider.reset(new Gherkin::GherkinProvider());
+
 	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr,
-		[&](VH value) { Gherkin::GherkinProvider::setKeywords(value); }
+		[&](VH value) { this->provider->setKeywords(value); }
 	);
 
 	AddFunction(u"Parse", u"Прочитать",
-		[&](VH data) {  this->result = this->Parse(data); }
+		[&](VH data) {  this->result = this->provider->ParseText(data); }
 	);
 
 	AddFunction(u"ParseFile", u"ПрочитатьФайл",
-		[&](VH filename) {  this->result = Gherkin::GherkinProvider::ParseFile(filename); }
+		[&](VH filename) {  this->result = this->provider->ParseFile(filename); }
 	);
 
 	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы",
@@ -38,13 +40,3 @@ void GherkinParser::ExitCurrentProcess(int64_t status)
 }
 
 #endif//_WINDOWS
-
-std::string GherkinParser::Parse(VH var)
-{
-	if (var.type() == VTYPE_PWSTR) {
-		std:: string text = var;
-		return Gherkin::GherkinProvider::Parse(text);
-	}
-	else
-		return {};
-}

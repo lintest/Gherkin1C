@@ -6,23 +6,23 @@
 %class{
 private:
   TokenType current_token;
-  GherkinDocument document;
+  GherkinDocument* document;
 public:
+  void init(GherkinDocument* doc) {
+    this->document = doc;
+  }
   void next() {
-    document.next(*this);
+    document->next(*this);
   }
   void push(TokenType tt, char ch = 0) {
-    document.push(*this, tt, ch);
+    document->push(*this, tt, ch);
   }
   void tail(TokenType type) {
     current_token = type;
     start(TAIL);
   }
   virtual void lexer_error(const char *message = NULL) override {
-    document.exception(*this, message);
-  }
-  std::string dump() const {
-    return (JSON)document;
+    document->exception(*this, message);
   }
 }
 
