@@ -108,9 +108,8 @@ for:
       - bin\1cv8t.exe DESIGNER /F %CD%/database /LoadExternalDataProcessorOrReportFromFiles Example.xml %APPVEYOR_PROJECT_NAME%.epf /Out example.log
       - appveyor PushArtifact %APPVEYOR_PROJECT_NAME%.epf
       - bin\1cv8ct.exe ENTERPRISE /LRU /F %CD%/database /Execute %APPVEYOR_PROJECT_NAME%.epf /C install
-#      - bin\1cv8ct.exe ENTERPRISE /LRU /F %CD%/database /Execute %APPVEYOR_PROJECT_NAME%.epf /C autotest
-#      - ps: if (!(Test-Path success.txt)) { throw "Имеются ошибки" }
-      - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      - bin\1cv8ct.exe ENTERPRISE /LRU /F %CD%/database /Execute %APPVEYOR_PROJECT_NAME%.epf /C autotest
+      - ps: if (!(Test-Path success.txt)) { throw "Имеются ошибки" }
 
     artifacts:
       - path: AddIn.zip
@@ -119,8 +118,6 @@ for:
       - path: example.log
 
     environment:
-      APPVEYOR_RDP_PASSWORD:
-        secure: AcFmdVW2ETmUSvM6uhjHAA==
       KEY_1CV8T:
         secure: OolAVEKkEg1cGCpG/VK2FaM0LWrPgMR/Kn4nTLYyKR0=
 
