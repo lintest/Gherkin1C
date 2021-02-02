@@ -130,13 +130,6 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	static std::string Parse(reflex::Input& input)
-	{
-		GherkinLexer lexer(input);
-		lexer.lex();
-		return lexer.dump();
-	}
-
 	std::string GherkinProvider::ParseFile(const std::wstring& filename)
 	{
 #ifdef _WINDOWS
@@ -147,13 +140,17 @@ namespace Gherkin {
 		std::unique_ptr<FILE, decltype(&fclose)> file(fopen(str.c_str(), "rb"), &fclose);
 #endif//_WINDOWS
 		reflex::Input input(file.get());
-		return ::Parse(input);
+		GherkinLexer lexer(input);
+		lexer.lex();
+		return lexer.dump();
 	}
 
 	std::string GherkinProvider::Parse(const std::string& text)
 	{
 		reflex::Input input(text);
-		return ::Parse(input);
+		GherkinLexer lexer(input);
+		lexer.lex();
+		return lexer.dump();
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
