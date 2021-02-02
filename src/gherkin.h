@@ -210,6 +210,17 @@ namespace Gherkin {
 		virtual operator JSON() const override;
 	};
 
+	class GherkinError {
+	private:
+		size_t line = 0;
+		size_t column = 0;
+		std::string message;
+	public:
+		GherkinError(GherkinLexer& lexer, const std::string& message);
+		GherkinError(size_t line, const std::string& message);
+		operator JSON() const;
+	};
+
 	class GherkinDocument {
 	private:
 		friend class GherkinElement;
@@ -227,6 +238,7 @@ namespace Gherkin {
 		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> background;
 		std::vector<GherkinDefinition> scenarios;
+		std::vector<GherkinError> errors;
 	private:
 		void setLanguage(GherkinLexer& lexer);
 		void processLine(GherkinLine& line);
@@ -240,6 +252,7 @@ namespace Gherkin {
 		std::string dump() const;
 		void next(GherkinLexer& l);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
+		void exception(GherkinLexer& lexer, const char* message);
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		const std::string& getLanguage() const { return language; }

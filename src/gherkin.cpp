@@ -1,5 +1,6 @@
 ﻿#include "gherkin.h"
 #include "gherkin.lex.h"
+#include <stdafx.h>
 #include <codecvt>
 #include <locale>
 #include <stdio.h>
@@ -49,18 +50,6 @@ namespace Gherkin {
 		static const reflex::Pattern pattern(regex);
 		auto matcher = reflex::Matcher(pattern, text);
 		return matcher.find() ? matcher.text() : std::string();
-	}
-
-	static std::string WC2MB(const std::wstring& wstr)
-	{
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		return converter.to_bytes(wstr);
-	}
-
-	static std::wstring MB2WC(const std::string& str)
-	{
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		return converter.from_bytes(str);
 	}
 
 	GherkinProvider::Keywords GherkinProvider::keywords;
@@ -518,6 +507,25 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinError::GherkinError(GherkinLexer& lexer, const std::string& message)
+		: line(lexer.lineno()), column(lexer.columno()), message(message)
+	{
+	}
+
+	GherkinError::GherkinError(size_t line, const std::string& message)
+		: line(line), column(0), message(message)
+	{
+	}
+
+	GherkinError::operator JSON() const
+	{
+		JSON json;
+		json["line"] = line;
+		json["text"] = message;
+		if (column) json["column"] = column;
+		return json;
+	}
+
 	void GherkinDocument::setLanguage(GherkinLexer& lexer)
 	{
 		if (language.empty())
@@ -561,14 +569,21 @@ namespace Gherkin {
 		resetElementStack(*definition);
 	}
 
+	void GherkinDocument::exception(GherkinLexer& lexer, const char* message)
+	{
+		std::stringstream stream_message;
+		stream_message << (message != NULL ? message : "lexer error") << " at " << lexer.lineno() << ":" << lexer.columno();
+		throw MB2WCHAR(stream_message.str());
+	}
+
 	void GherkinDocument::error(GherkinLexer& lexer, const std::string& error)
 	{
-		//TODO: save error to error list
+		errors.emplace_back(lexer, error);
 	}
 
 	void GherkinDocument::error(GherkinLine& line, const std::string& error)
 	{
-		//TODO: save error to error list
+		errors.emplace_back(line.getLineNumber(), error);
 	}
 
 	void GherkinDocument::push(GherkinLexer& lexer, TokenType type, char ch)
@@ -713,6 +728,9 @@ namespace Gherkin {
 
 		if (!scenarios.empty())
 			json["scenarios"] = JSON(scenarios);
+
+		if (!errors.empty())
+			json["errors"] = JSON(errors);
 
 		return json.dump();
 	}

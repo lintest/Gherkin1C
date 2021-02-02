@@ -18,6 +18,9 @@ public:
     current_token = type;
     start(TAIL);
   }
+  virtual void lexer_error(const char *message = NULL) override {
+    document.exception(*this, message);
+  }
   std::string dump() const {
     return (JSON)document;
   }
