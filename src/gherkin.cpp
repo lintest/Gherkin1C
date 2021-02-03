@@ -236,7 +236,7 @@ namespace Gherkin {
 		}
 		else {
 			text = trim(text);
-			wstr = WC2MB(text);
+			wstr = MB2WC(text);
 		}
 	};
 
