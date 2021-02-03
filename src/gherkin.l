@@ -7,7 +7,7 @@
 private:
 	TokenType current_token;
 	GherkinDocument* document;
-	friend class GherkinElement;
+	friend class Gherkin::GherkinElement;
 	GherkinLine* currentLine = nullptr;
 	GherkinTable* currentTable = nullptr;
 	GherkinTags tagStack;
