@@ -213,6 +213,8 @@ namespace Gherkin {
 					escaping = false;
 					wchar_t wc = *it;
 					switch (wc) {
+					case L'\"': ss << L'\"'; break;
+					case L'\'': ss << L'\''; break;
 					case L't': ss << L'\t'; break;
 					case L'n': ss << L'\n'; break;
 					case L'r': ss << L'\r'; break;
@@ -234,6 +236,7 @@ namespace Gherkin {
 		}
 		else {
 			text = trim(text);
+			wstr = WC2MB(text);
 		}
 	};
 

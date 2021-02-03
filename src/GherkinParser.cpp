@@ -14,7 +14,7 @@ GherkinParser::GherkinParser()
 	);
 
 	AddProperty(u"PrimitiveEscaping", u"ПримитивноеЭкранирование", 
-		[&](VH value) { this->result = this->provider->primitiveEscaping; },
+		[&](VH value) { value = this->provider->primitiveEscaping; },
 		[&](VH value) { this->provider->primitiveEscaping = value; }
 	);
 
