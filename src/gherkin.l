@@ -4,10 +4,9 @@
 %}
 
 %class{
-private:
+public:
 	TokenType current_token;
 	GherkinDocument* document;
-	friend class Gherkin::GherkinElement;
 	GherkinLine* currentLine = nullptr;
 	GherkinTable* currentTable = nullptr;
 	GherkinTags tagStack;
