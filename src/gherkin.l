@@ -8,8 +8,10 @@ private:
   TokenType current_token;
   GherkinDocument* document;
 public:
-  void init(GherkinDocument* doc) {
-    this->document = doc;
+  JSON parse(GherkinDocument& doc) {
+    document = &doc;
+	lex();
+	return JSON(doc);
   }
   void next() {
     document->next(*this);
@@ -20,6 +22,9 @@ public:
   void tail(TokenType type) {
     current_token = type;
     start(TAIL);
+  }
+  bool isPrimitiveEscaping() const {
+    return document ? document->provider.primitiveEscaping : false;
   }
   virtual void lexer_error(const char *message = NULL) override {
     document->exception(*this, message);

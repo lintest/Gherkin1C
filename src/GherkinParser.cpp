@@ -13,6 +13,11 @@ GherkinParser::GherkinParser()
 		[&](VH value) { this->provider->setKeywords(value); }
 	);
 
+	AddProperty(u"PrimitiveEscaping", u"ПримитивноеЭкранирование", 
+		[&](VH value) { this->result = this->provider->primitiveEscaping; },
+		[&](VH value) { this->provider->primitiveEscaping = value; }
+	);
+
 	AddFunction(u"Parse", u"Прочитать",
 		[&](VH data) {  this->result = this->provider->ParseText(data); }
 	);

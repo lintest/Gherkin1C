@@ -141,9 +141,7 @@ namespace Gherkin {
 		reflex::Input input(file.get());
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		lexer.init(&doc);
-		lexer.lex();
-		return JSON(doc);
+		return lexer.parse(doc);
 	}
 
 	std::string GherkinProvider::ParseText(const std::string& text) const
@@ -151,9 +149,7 @@ namespace Gherkin {
 		reflex::Input input(text);
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		lexer.init(&doc);
-		lexer.lex();
-		return JSON(doc);
+		return lexer.parse(doc);
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
@@ -217,11 +213,14 @@ namespace Gherkin {
 					escaping = false;
 					wchar_t wc = *it;
 					switch (wc) {
-					case L't': wc = L'\t'; break;
-					case L'n': wc = L'\n'; break;
-					case L'r': wc = L'\r'; break;
+					case L't': ss << L'\t'; break;
+					case L'n': ss << L'\n'; break;
+					case L'r': ss << L'\r'; break;
+					default:
+						if (lexer.isPrimitiveEscaping())
+							ss << L'\\';
+						ss << wc;
 					}
-					ss << wc;
 				}
 				else {
 					if (*it == L'\\')

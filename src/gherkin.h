@@ -76,6 +76,7 @@ namespace Gherkin {
 	private:
 		Keywords keywords;
 	public:
+		bool primitiveEscaping = false;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
 		std::string ParseFile(const std::wstring& filename) const;
@@ -225,7 +226,6 @@ namespace Gherkin {
 	private:
 		friend class GherkinElement;
 		friend class GherkinDefinition;
-		const GherkinProvider& provider;
 		GherkinLine* currentLine = nullptr;
 		GherkinTable* currentTable = nullptr;
 		GherkinTags tagStack;
@@ -250,6 +250,7 @@ namespace Gherkin {
 		void addElement(GherkinLine& line);
 	public:
 		GherkinDocument(const GherkinProvider& provider): provider(provider) {}
+		const GherkinProvider& provider;
 		std::string dump() const;
 		void next(GherkinLexer& l);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
