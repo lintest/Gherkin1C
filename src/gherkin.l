@@ -7,6 +7,7 @@
 public:
 	TokenType current_token;
 	GherkinDocument* document;
+	std::vector<GherkinLine> lines;
 	GherkinLine* currentLine = nullptr;
 	GherkinTable* currentTable = nullptr;
 	GherkinTags tagStack;
@@ -14,10 +15,10 @@ public:
 	std::vector<std::pair<int, GherkinElement*>> elementStack;
 	GherkinElement* lastElement = nullptr;
 public:
-	JSON parse(GherkinDocument& doc) {
+	std::string parse(GherkinDocument& doc) {
 		document = &doc;
 		lex();
-		return JSON(doc);
+		return doc.dump();
 	}
 	void next() {
 		document->next(*this);

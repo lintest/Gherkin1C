@@ -598,8 +598,8 @@ namespace Gherkin {
 	void GherkinDocument::push(GherkinLexer& lexer, TokenType type, char ch)
 	{
 		if (lexer.currentLine == nullptr) {
-			lines.push_back({ lexer });
-			lexer.currentLine = &lines.back();
+			lexer.lines.push_back({ lexer });
+			lexer.currentLine = &lexer.lines.back();
 		}
 		lexer.currentLine->push(lexer, type, ch);
 		switch (type) {
@@ -696,22 +696,11 @@ namespace Gherkin {
 		else {
 			auto lineNumber = lexer.lineno();
 			if (lineNumber > 1) {
-				lines.push_back({ lineNumber });
-				processLine(lexer, lines.back());
+				lexer.lines.push_back({ lineNumber });
+				processLine(lexer, lexer.lines.back());
 			}
 			return;
 		}
-	}
-
-	std::string GherkinDocument::dump() const
-	{
-		JSON json, js;
-		for (auto& line : lines) {
-			js.push_back(line);
-		}
-		json["lines"] = js;
-		json["tags"] = getTags();
-		return json.dump();
 	}
 
 	const GherkinTags& GherkinDocument::getTags() const
@@ -720,7 +709,7 @@ namespace Gherkin {
 		return feature ? feature->getTags() : empty;
 	}
 
-	GherkinDocument::operator JSON() const
+	std::string GherkinDocument::dump() const
 	{
 		JSON json;
 		json["language"] = language;

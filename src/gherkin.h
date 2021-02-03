@@ -225,7 +225,6 @@ namespace Gherkin {
 	class GherkinDocument {
 	private:
 		std::string language;
-		std::vector<GherkinLine> lines;
 		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> background;
@@ -242,7 +241,6 @@ namespace Gherkin {
 	public:
 		GherkinDocument(const GherkinProvider& provider) : provider(provider) {}
 		const GherkinProvider& provider;
-		std::string dump() const;
 		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
 		void exception(GherkinLexer& lexer, const char* message);
@@ -250,7 +248,7 @@ namespace Gherkin {
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		const GherkinTags& getTags() const;
-		operator JSON() const;
+		std::string dump() const;
 	};
 }
 
