@@ -44,7 +44,7 @@ language      #\s*(?i)(language)\s*:\s*
 encoding      #\s*(?i)(encoding)\s*:\s*
 asterisk      \*
 operator      \w+
-number        -?(\d*\.)?\d+
+number        -?(\d*[\.\,])?\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
 param_d       \"([^\\\"\n\r]|.)*\"
 param_a       `([^\\`\n\r]|.)*`
