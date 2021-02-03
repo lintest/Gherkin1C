@@ -54,7 +54,7 @@ comment       #|\/\/
 space         \h+
 colon         :
 table         \|
-cell          [^\s][^\n\r\|]*
+cell          (\\\||[^\s\|])(\\\||[^\|\n\r\\])*
 text          [^\s][^\r\n]*
 str_a         \`\`\`[^\n\r]*
 str_d         \"\"\"[^\n\r]*
