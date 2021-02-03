@@ -162,9 +162,9 @@ namespace Gherkin {
 		std::vector<GherkinElement*> items;
 		std::vector<GherkinTable> tables;
 	public:
-		GherkinElement(GherkinDocument& document, const GherkinLine& line);
+		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
 		virtual ~GherkinElement();
-		virtual GherkinElement* push(GherkinDocument& document, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
 		virtual operator JSON() const;
@@ -176,7 +176,7 @@ namespace Gherkin {
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
 	public:
-		GherkinDefinition(GherkinDocument& document, const GherkinLine& line);
+		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
 
@@ -187,8 +187,8 @@ namespace Gherkin {
 		std::vector<std::string> description;
 		GherkinKeyword keyword;
 	public:
-		GherkinFeature(GherkinDocument& document, const GherkinLine& line);
-		virtual GherkinElement* push(GherkinDocument& document, const GherkinLine& line) override;
+		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual operator JSON() const override;
 	};
 
@@ -197,7 +197,7 @@ namespace Gherkin {
 	private:
 		std::string name;
 	public:
-		GherkinGroup(GherkinDocument& document, const GherkinLine& line);
+		GherkinGroup(GherkinLexer& lexer, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
 
@@ -207,7 +207,7 @@ namespace Gherkin {
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
 	public:
-		GherkinStep(GherkinDocument& document, const GherkinLine& line);
+		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		virtual operator JSON() const override;
 	};
 
@@ -224,17 +224,8 @@ namespace Gherkin {
 
 	class GherkinDocument {
 	private:
-		friend class GherkinElement;
-		friend class GherkinDefinition;
-		GherkinLine* currentLine = nullptr;
-		GherkinTable* currentTable = nullptr;
-		GherkinTags tagStack;
-		GherkinComments commentStack;
-		GherkinElement* lastElement = nullptr;
-		std::vector<std::pair<int, GherkinElement*>> elementStack;
-	private:
-		std::vector<GherkinLine> lines;
 		std::string language;
+		std::vector<GherkinLine> lines;
 		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> background;
@@ -242,17 +233,17 @@ namespace Gherkin {
 		std::vector<GherkinError> errors;
 	private:
 		void setLanguage(GherkinLexer& lexer);
-		void processLine(GherkinLine& line);
-		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLine& line);
-		void addScenarioDefinition(GherkinLine& line);
-		void resetElementStack(GherkinElement& element);
-		void addTableLine(GherkinLine& line);
-		void addElement(GherkinLine& line);
+		void processLine(GherkinLexer& lexer, GherkinLine& line);
+		void setDefinition(std::unique_ptr<GherkinDefinition>& def, GherkinLexer& lexer, GherkinLine& line);
+		void addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line);
+		void resetElementStack(GherkinLexer& lexer, GherkinElement& element);
+		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
+		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
 		GherkinDocument(const GherkinProvider& provider): provider(provider) {}
 		const GherkinProvider& provider;
 		std::string dump() const;
-		void next(GherkinLexer& l);
+		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
 		void exception(GherkinLexer& lexer, const char* message);
 		void error(GherkinLexer& lexer, const std::string& error);

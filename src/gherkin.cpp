@@ -368,11 +368,11 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinElement::GherkinElement(GherkinDocument& document, const GherkinLine& line)
+	GherkinElement::GherkinElement(GherkinLexer& lexer, const GherkinLine& line)
 		: wstr(line.getWstr()), text(line.getText()), lineNumber(line.getLineNumber())
 	{
-		comments = std::move(document.commentStack);
-		tags = std::move(document.tagStack);
+		comments = std::move(lexer.commentStack);
+		tags = std::move(lexer.tagStack);
 	}
 
 	GherkinElement::~GherkinElement()
@@ -383,17 +383,17 @@ namespace Gherkin {
 		items.clear();
 	}
 
-	GherkinElement* GherkinElement::push(GherkinDocument& document, const GherkinLine& line)
+	GherkinElement* GherkinElement::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
 		GherkinElement* element = nullptr;
 		switch (line.getType()) {
 		case TokenType::Keyword:
-			element = new GherkinStep(document, line);
+			element = new GherkinStep(lexer, line);
 			break;
 		case TokenType::Asterisk:
 		case TokenType::Operator:
 		case TokenType::Symbol:
-			element = new GherkinGroup(document, line);
+			element = new GherkinGroup(lexer, line);
 			break;
 		default:
 			return nullptr;
@@ -434,8 +434,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinFeature::GherkinFeature(GherkinDocument& document, const GherkinLine& line)
-		: GherkinDefinition(document, line), keyword(*line.getKeyword())
+	GherkinFeature::GherkinFeature(GherkinLexer& lexer, const GherkinLine& line)
+		: GherkinDefinition(lexer, line), keyword(*line.getKeyword())
 	{
 		std::string text = line.getText();
 		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
@@ -446,7 +446,7 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinElement* GherkinFeature::push(GherkinDocument& document, const GherkinLine& line)
+	GherkinElement* GherkinFeature::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
 		description.emplace_back(trim(line.getText()));
 		return nullptr;
@@ -467,8 +467,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinDefinition::GherkinDefinition(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), keyword(*line.getKeyword())
+	GherkinDefinition::GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line)
+		: GherkinElement(lexer, line), keyword(*line.getKeyword())
 	{
 	}
 
@@ -483,8 +483,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinStep::GherkinStep(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), keyword(*line.getKeyword()), tokens(line.getTokens())
+	GherkinStep::GherkinStep(GherkinLexer& lexer, const GherkinLine& line)
+		: GherkinElement(lexer, line), keyword(*line.getKeyword()), tokens(line.getTokens())
 	{
 	}
 
@@ -499,8 +499,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinGroup::GherkinGroup(GherkinDocument& document, const GherkinLine& line)
-		: GherkinElement(document, line), name(trim(line.getText()))
+	GherkinGroup::GherkinGroup(GherkinLexer& lexer, const GherkinLine& line)
+		: GherkinElement(lexer, line), name(trim(line.getText()))
 	{
 	}
 
@@ -538,14 +538,14 @@ namespace Gherkin {
 			error(lexer, "Language key duplicate error");
 	}
 
-	void GherkinDocument::resetElementStack(GherkinElement& element)
+	void GherkinDocument::resetElementStack(GherkinLexer& lexer, GherkinElement& element)
 	{
-		lastElement = &element;
-		elementStack.clear();
-		elementStack.emplace_back(-1, &element);
+		lexer.lastElement = &element;
+		lexer.elementStack.clear();
+		lexer.elementStack.emplace_back(-1, &element);
 	}
 
-	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLine& line)
+	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLexer& lexer, GherkinLine& line)
 	{
 		if (definition) {
 			auto keyword = line.getKeyword();
@@ -559,18 +559,18 @@ namespace Gherkin {
 		else {
 			GherkinDefinition* def =
 				line.getKeyword()->getType() == KeywordType::Feature
-				? (GherkinDefinition*) new GherkinFeature(*this, line)
-				: new GherkinDefinition(*this, line);
+				? (GherkinDefinition*) new GherkinFeature(lexer, line)
+				: new GherkinDefinition(lexer, line);
 			definition.reset(def);
-			resetElementStack(*def);
+			resetElementStack(lexer, *def);
 		}
 	}
 
-	void GherkinDocument::addScenarioDefinition(GherkinLine& line)
+	void GherkinDocument::addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line)
 	{
-		scenarios.emplace_back(*this, line);
+		scenarios.emplace_back(lexer, line);
 		auto definition = &scenarios.back();
-		resetElementStack(*definition);
+		resetElementStack(lexer, *definition);
 	}
 
 	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
@@ -597,31 +597,31 @@ namespace Gherkin {
 
 	void GherkinDocument::push(GherkinLexer& lexer, TokenType type, char ch)
 	{
-		if (currentLine == nullptr) {
+		if (lexer.currentLine == nullptr) {
 			lines.push_back({ lexer });
-			currentLine = &lines.back();
+			lexer.currentLine = &lines.back();
 		}
-		currentLine->push(lexer, type, ch);
+		lexer.currentLine->push(lexer, type, ch);
 		switch (type) {
 		case TokenType::Language:
 			setLanguage(lexer);
 			break;
 		case TokenType::Comment:
-			commentStack.push_back(lexer.text());
+			lexer.commentStack.push_back(lexer.text());
 			break;
 		case TokenType::Tag:
-			tagStack.push_back(lexer.text());
+			lexer.tagStack.push_back(lexer.text());
 			break;
 		}
 	}
 
-	void GherkinDocument::addTableLine(GherkinLine& line)
+	void GherkinDocument::addTableLine(GherkinLexer& lexer, GherkinLine& line)
 	{
-		if (lastElement) {
-			if (currentTable)
-				currentTable->push(line);
+		if (lexer.lastElement) {
+			if (lexer.currentTable)
+				lexer.currentTable->push(line);
 			else {
-				currentTable = lastElement->pushTable(line);
+				lexer.currentTable = lexer.lastElement->pushTable(line);
 			}
 		}
 		else {
@@ -629,46 +629,45 @@ namespace Gherkin {
 		}
 	}
 
-	void GherkinDocument::addElement(GherkinLine& line)
+	void GherkinDocument::addElement(GherkinLexer& lexer, GherkinLine& line)
 	{
 		auto indent = line.getIndent();
-		while (!elementStack.empty()) {
-			if (elementStack.back().first < indent) break;
-			elementStack.pop_back();
+		while (!lexer.elementStack.empty()) {
+			if (lexer.elementStack.back().first < indent) break;
+			lexer.elementStack.pop_back();
 		}
-		if (elementStack.empty()) {
+		if (lexer.elementStack.empty()) {
 			throw u"Element statck is empty";
 		}
-		auto parent = elementStack.back().second;
-		auto element = parent->push(*this, line);
-		if (element) {
-			elementStack.emplace_back(indent, element);
-			lastElement = element;
+		auto parent = lexer.elementStack.back().second;
+		if (auto element = parent->push(lexer, line)) {
+			lexer.elementStack.emplace_back(indent, element);
+			lexer.lastElement = element;
 		}
 	}
 
-	void GherkinDocument::processLine(GherkinLine& line)
+	void GherkinDocument::processLine(GherkinLexer& lexer, GherkinLine& line)
 	{
 		if (line.getType() != TokenType::Table)
-			currentTable = nullptr;
+			lexer.currentTable = nullptr;
 
 		auto keyword = line.matchKeyword(*this);
 		if (keyword) {
 			switch (keyword->getType()) {
 			case KeywordType::Feature:
-				setDefinition(feature, line);
+				setDefinition(feature, lexer, line);
 				break;
 			case KeywordType::ScenarioOutline:
-				setDefinition(outline, line);
+				setDefinition(outline, lexer, line);
 				break;
 			case KeywordType::Background:
-				setDefinition(background, line);
+				setDefinition(background, lexer, line);
 				break;
 			case KeywordType::Scenario:
-				addScenarioDefinition(line);
+				addScenarioDefinition(lexer, line);
 				break;
 			default:
-				addElement(line);
+				addElement(lexer, line);
 			}
 		}
 		else {
@@ -676,10 +675,10 @@ namespace Gherkin {
 			case TokenType::Asterisk:
 			case TokenType::Operator:
 			case TokenType::Symbol:
-				addElement(line);
+				addElement(lexer, line);
 				break;
 			case TokenType::Table:
-				addTableLine(line);
+				addTableLine(lexer, line);
 				break;
 			case TokenType::Multiline:
 				//TODO: add multy line
@@ -688,17 +687,17 @@ namespace Gherkin {
 		}
 	}
 
-	void GherkinDocument::next(GherkinLexer& l)
+	void GherkinDocument::next(GherkinLexer& lexer)
 	{
-		if (currentLine) {
-			processLine(*currentLine);
-			currentLine = nullptr;
+		if (lexer.currentLine) {
+			processLine(lexer, *lexer.currentLine);
+			lexer.currentLine = nullptr;
 		}
 		else {
-			auto lineNumber = l.lineno();
+			auto lineNumber = lexer.lineno();
 			if (lineNumber > 1) {
 				lines.push_back({ lineNumber });
-				processLine(lines.back());
+				processLine(lexer, lines.back());
 			}
 			return;
 		}

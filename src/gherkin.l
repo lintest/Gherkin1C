@@ -1,37 +1,45 @@
 %top{
-  #include "gherkin.h"
-  using namespace Gherkin;
+	#include "gherkin.h"
+	using namespace Gherkin;
 %}
 
 %class{
 private:
-  TokenType current_token;
-  GherkinDocument* document;
+	TokenType current_token;
+	GherkinDocument* document;
+	friend class GherkinElement;
+	GherkinLine* currentLine = nullptr;
+	GherkinTable* currentTable = nullptr;
+	GherkinTags tagStack;
+	GherkinComments commentStack;
+	std::vector<std::pair<int, GherkinElement*>> elementStack;
+	GherkinElement* lastElement = nullptr;
 public:
-  JSON parse(GherkinDocument& doc) {
-    document = &doc;
-	lex();
-	return JSON(doc);
-  }
-  void next() {
-    document->next(*this);
-  }
-  void push(TokenType tt, char ch = 0) {
-    document->push(*this, tt, ch);
-  }
-  void tail(TokenType type) {
-    current_token = type;
-    start(TAIL);
-  }
-  bool isPrimitiveEscaping() const {
-    return document ? document->provider.primitiveEscaping : false;
-  }
-  virtual void lexer_error(const char *message = NULL) override {
-    document->exception(*this, message);
-  }
+	JSON parse(GherkinDocument& doc) {
+		document = &doc;
+		lex();
+		return JSON(doc);
+	}
+	void next() {
+		document->next(*this);
+	}
+	void push(TokenType tt, char ch = 0) {
+		document->push(*this, tt, ch);
+	}
+	void tail(TokenType type) {
+		current_token = type;
+		start(TAIL);
+	}
+	bool isPrimitiveEscaping() const {
+		return document ? document->provider.primitiveEscaping : false;
+	}
+	virtual void lexer_error(const char *message = NULL) override {
+		document->exception(*this, message);
+	}
 }
 
 %option fast nodefault unicode
+
 %xstate LINE
 %xstate TAG
 %xstate TAIL
