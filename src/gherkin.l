@@ -101,6 +101,10 @@ tag           @
 
 <TABLE>{new_line}     { next(); start(INITIAL); }
 <TABLE>{table}        { push(TokenType::Table); }
+<TABLE>{param_a}      { push(TokenType::Cell, '`'); }
+<TABLE>{param_b}      { push(TokenType::Cell, '>'); }
+<TABLE>{param_d}      { push(TokenType::Cell, '\"'); }
+<TABLE>{param_s}      { push(TokenType::Cell, '\''); }
 <TABLE>{cell}         { push(TokenType::Cell); }
 <TABLE>{space}        // ignore
 

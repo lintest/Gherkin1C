@@ -202,7 +202,7 @@ namespace Gherkin {
 	GherkinToken::GherkinToken(GherkinLexer& lexer, TokenType type, char ch)
 		: type(type), wstr(lexer.wstr()), text(lexer.text()), column(lexer.columno()), symbol(ch)
 	{
-		if (type == TokenType::Param && ch != 0) {
+		if (ch != 0) {
 			bool escaping = false;
 			std::wstringstream ss;
 			for (auto it = wstr.begin(); it != wstr.end(); ++it) {

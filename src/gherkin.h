@@ -240,7 +240,7 @@ namespace Gherkin {
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
-		GherkinDocument(const GherkinProvider& provider): provider(provider) {}
+		GherkinDocument(const GherkinProvider& provider) : provider(provider) {}
 		const GherkinProvider& provider;
 		std::string dump() const;
 		void next(GherkinLexer& lexer);
