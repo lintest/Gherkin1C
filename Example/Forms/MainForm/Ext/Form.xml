@@ -35,6 +35,16 @@
 				<Event name="StartChoice">ФайлНачалоВыбора</Event>
 			</Events>
 		</InputField>
+		<CheckBoxField name="ПримитивноеЭкранирование" id="18">
+			<DataPath>ПримитивноеЭкранирование</DataPath>
+			<TitleLocation>Right</TitleLocation>
+			<CheckBoxType>Auto</CheckBoxType>
+			<ContextMenu name="ПримитивноеЭкранированиеКонтекстноеМеню" id="19"/>
+			<ExtendedTooltip name="ПримитивноеЭкранированиеРасширеннаяПодсказка" id="20"/>
+			<Events>
+				<Event name="OnChange">ПримитивноеЭкранированиеПриИзменении</Event>
+			</Events>
+		</CheckBoxField>
 		<TextDocumentField name="ТекстJSON" id="11">
 			<DataPath>ТекстJSON</DataPath>
 			<ContextMenu name="ТекстJSONКонтекстноеМеню" id="12"/>
@@ -117,6 +127,17 @@
 					<v8:Length>0</v8:Length>
 					<v8:AllowedLength>Variable</v8:AllowedLength>
 				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ПримитивноеЭкранирование" id="3">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Примитивное экранирование</v8:content>
+				</v8:item>
+			</Title>
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
 			</Type>
 		</Attribute>
 	</Attributes>
