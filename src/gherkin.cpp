@@ -13,7 +13,7 @@
 
 static bool comparei(const std::wstring& a, const std::wstring& b)
 {
-	return boost::iequals(a, b);
+	return boost::iequals(a, b, std::locale("ru_RU.UTF-8"));
 }
 
 #else//USE_BOOST
