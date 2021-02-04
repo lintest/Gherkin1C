@@ -22,8 +22,12 @@ GherkinParser::GherkinParser()
 		[&](VH data) {  this->result = this->provider->ParseText(data); }
 	);
 
+	AddFunction(u"ParseFolder", u"ПрочитатьПапку",
+		[&](VH filepath) {  this->result = this->provider->ParseFolder(filepath); }
+	);
+
 	AddFunction(u"ParseFile", u"ПрочитатьФайл",
-		[&](VH filename) {  this->result = this->provider->ParseFile(filename); }
+		[&](VH filepath) {  this->result = this->provider->ParseFile(filepath); }
 	);
 
 	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы",

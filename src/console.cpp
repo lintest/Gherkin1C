@@ -1,23 +1,61 @@
-#include "gherkin.lex.h"
-#include <fstream>
+#include "stdafx.h"
+#include "gherkin.h"
 #include <string>
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <codecvt>
 
-int main(int argc, char** argv)
+using namespace Gherkin;
+
+std::string WC2MB(const std::wstring& wstr)
 {
-	reflex::Input input;
-	if (argc > 1) {
-		input = fopen(argv[1], "r");
-		if (input.file() == NULL) {
-			perror("Cannot open file for reading");
-			exit(EXIT_FAILURE);
-		}
-	}
-	else {
-		input = stdin;
-	}
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	return converter.to_bytes(wstr);
+}
 
+std::wstring MB2WC(const std::string& str)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	return converter.from_bytes(str);
+}
+
+std::string WCHAR2MB(std::basic_string_view<WCHAR_T> src)
+{
+#ifdef _WINDOWS
+	static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> cvt_utf8_utf16;
+	return cvt_utf8_utf16.to_bytes(src.data(), src.data() + src.size());
+#else
+	static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt_utf8_utf16;
+	return cvt_utf8_utf16.to_bytes(reinterpret_cast<const char16_t*>(src.data()),
+		reinterpret_cast<const char16_t*>(src.data() + src.size()));
+#endif//_WINDOWS
+}
+
+std::wstring WCHAR2WC(std::basic_string_view<WCHAR_T> src) {
+#ifdef _WINDOWS
+	return std::wstring(src);
+#else
+	std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>> conv;
+	return conv.from_bytes(reinterpret_cast<const char*>(src.data()),
+		reinterpret_cast<const char*>(src.data() + src.size()));
+#endif//_WINDOWS
+}
+
+std::u16string MB2WCHAR(std::string_view src) {
+#ifdef _WINDOWS
+	static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> cvt_utf8_utf16;
+	std::wstring tmp = cvt_utf8_utf16.from_bytes(src.data(), src.data() + src.size());
+	return std::u16string(reinterpret_cast<const char16_t*>(tmp.data()), tmp.size());
+#else
+	static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt_utf8_utf16;
+	return cvt_utf8_utf16.from_bytes(src.data(), src.data() + src.size());
+#endif//_WINDOWS
+}
+
+int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
+{
 	GherkinProvider provider;
-
 	if (argc > 2) {
 		std::ifstream fstream;
 		fstream.open(argv[2]);
@@ -29,14 +67,9 @@ int main(int argc, char** argv)
 		provider.setKeywords(json);
 	}
 
-	GherkinDocument doc(provider);
-	GherkinLexer lexer(input);
-	lexer.init(&doc);
-	lexer.lex();
-	std::cout << JSON(doc).dump();
-
-	if (input.file() != stdin)
-		fclose(input.file());
+	if (argc > 1) {
+		std::cout << provider.ParseFolder(argv[1]);
+	}
 
 	return 0;
 }

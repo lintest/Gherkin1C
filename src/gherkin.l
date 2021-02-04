@@ -15,10 +15,10 @@ public:
 	std::vector<std::pair<int, GherkinElement*>> elementStack;
 	GherkinElement* lastElement = nullptr;
 public:
-	std::string parse(GherkinDocument& doc) {
+	JSON parse(GherkinDocument& doc) {
 		document = &doc;
 		lex();
-		return doc.dump();
+		return JSON(doc);
 	}
 	void next() {
 		document->next(*this);

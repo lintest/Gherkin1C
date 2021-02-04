@@ -79,7 +79,8 @@ namespace Gherkin {
 		bool primitiveEscaping = false;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
-		std::string ParseFile(const std::wstring& filename) const;
+		std::string ParseFolder(const std::wstring& path) const;
+		std::string ParseFile(const std::wstring& path) const;
 		std::string ParseText(const std::string& text) const;
 	};
 
@@ -159,11 +160,10 @@ namespace Gherkin {
 		size_t lineNumber;
 		GherkinTags tags;
 		GherkinComments comments;
-		std::vector<GherkinElement*> items;
+		std::vector<std::unique_ptr<GherkinElement>> items;
 		std::vector<GherkinTable> tables;
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
-		virtual ~GherkinElement();
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
@@ -228,7 +228,7 @@ namespace Gherkin {
 		std::unique_ptr<GherkinDefinition> feature;
 		std::unique_ptr<GherkinDefinition> outline;
 		std::unique_ptr<GherkinDefinition> background;
-		std::vector<GherkinDefinition> scenarios;
+		std::vector<std::unique_ptr<GherkinDefinition>> scenarios;
 		std::vector<GherkinError> errors;
 	private:
 		void setLanguage(GherkinLexer& lexer);
@@ -249,6 +249,7 @@ namespace Gherkin {
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		const GherkinTags& getTags() const;
 		std::string dump() const;
+		operator JSON() const;
 	};
 }
 

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <reflex/matcher.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 
 #ifdef USE_BOOST
 
@@ -42,6 +44,15 @@ static bool comparei(std::wstring a, std::wstring b)
 #endif//_WINDOWS
 
 #endif//USE_BOOST
+
+static FILE* fileopen(const std::wstring& filepath)
+{
+#ifdef _WINDOWS
+	return _wfopen(filepath.c_str(), L"rb");
+#else
+	return fopen(WC2MB(filepath).c_str(), "rb");
+#endif
+}
 
 namespace Gherkin {
 
@@ -130,19 +141,37 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFile(const std::wstring& filename) const
+	std::string GherkinProvider::ParseFolder(const std::wstring& root) const
 	{
-#ifdef _WINDOWS
-		std::unique_ptr<FILE, decltype(&fclose)> file(_wfopen(filename.c_str(), L"rb"), &fclose);
-#else//_WINDOWS
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		std::string str = converter.to_bytes(filename);
-		std::unique_ptr<FILE, decltype(&fclose)> file(fopen(str.c_str(), "rb"), &fclose);
-#endif//_WINDOWS
+		JSON json;
+		const std::wstring mask = L"^.+\\.feature$";
+		boost::wregex pattern(mask, boost::regex::icase);
+		boost::filesystem::recursive_directory_iterator end_itr; // Default ctor yields past-the-end
+		for (boost::filesystem::recursive_directory_iterator i(root); i != end_itr; ++i) {
+			if (boost::filesystem::is_regular_file(i->status())) {
+				boost::wsmatch what;
+				std::wstring path = i->path().wstring();
+				std::wstring name = i->path().filename().wstring();
+				if (!boost::regex_match(name, what, pattern)) continue;
+				std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
+				reflex::Input input(file.get());
+				GherkinDocument doc(*this);
+				GherkinLexer lexer(input);
+				auto j = lexer.parse(doc);
+				j["filepath"] = WC2MB(path);
+				json.push_back(j);
+			}
+		}
+		return json.dump();
+	}
+
+	std::string GherkinProvider::ParseFile(const std::wstring& path) const
+	{
+		std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
 		reflex::Input input(file.get());
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		return lexer.parse(doc);
+		return lexer.parse(doc).dump();
 	}
 
 	std::string GherkinProvider::ParseText(const std::string& text) const
@@ -150,7 +179,7 @@ namespace Gherkin {
 		reflex::Input input(text);
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		return lexer.parse(doc);
+		return lexer.parse(doc).dump();
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
@@ -248,7 +277,7 @@ namespace Gherkin {
 		json["column"] = column;
 		json["type"] = type2str();
 
-		if (symbol != 0) 
+		if (symbol != 0)
 			json["symbol"] = std::string(1, symbol);
 
 		return json;
@@ -292,7 +321,7 @@ namespace Gherkin {
 
 	void GherkinLine::push(GherkinLexer& lexer, TokenType type, char ch)
 	{
-		tokens.emplace_back( lexer, type, ch );
+		tokens.emplace_back(lexer, type, ch);
 	}
 
 	GherkinKeyword* GherkinLine::matchKeyword(GherkinDocument& document)
@@ -376,14 +405,6 @@ namespace Gherkin {
 		tags = std::move(lexer.tagStack);
 	}
 
-	GherkinElement::~GherkinElement()
-	{
-		for (auto ptr : items) {
-			free(ptr);
-		}
-		items.clear();
-	}
-
 	GherkinElement* GherkinElement::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
 		GherkinElement* element = nullptr;
@@ -399,7 +420,7 @@ namespace Gherkin {
 		default:
 			return nullptr;
 		}
-		items.push_back(element);
+		items.emplace_back(element);
 		return element;
 	}
 
@@ -418,8 +439,9 @@ namespace Gherkin {
 
 		if (!items.empty()) {
 			JSON js;
-			for (auto item : items)
+			for (auto& item : items)
 				js.push_back(JSON(*item));
+
 			json["items"] = js;
 		}
 
@@ -569,9 +591,8 @@ namespace Gherkin {
 
 	void GherkinDocument::addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line)
 	{
-		scenarios.emplace_back(lexer, line);
-		auto definition = &scenarios.back();
-		resetElementStack(lexer, *definition);
+		scenarios.emplace_back(new GherkinDefinition(lexer, line));
+		resetElementStack(lexer, *scenarios.back().get());
 	}
 
 	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
@@ -712,6 +733,11 @@ namespace Gherkin {
 
 	std::string GherkinDocument::dump() const
 	{
+		return JSON(*this).dump();
+	}
+
+	GherkinDocument::operator JSON() const
+	{
 		JSON json;
 		json["language"] = language;
 
@@ -724,12 +750,17 @@ namespace Gherkin {
 		if (background)
 			json["background"] = JSON(*background);
 
-		if (!scenarios.empty())
-			json["scenarios"] = JSON(scenarios);
+		if (!scenarios.empty()) {
+			JSON js;
+			for (auto& scen : scenarios)
+				js.push_back(*scen);
+
+			json["scenarios"] = js;
+		}
 
 		if (!errors.empty())
 			json["errors"] = JSON(errors);
 
-		return json.dump();
+		return json;
 	}
 }

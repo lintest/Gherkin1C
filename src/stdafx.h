@@ -5,7 +5,7 @@
 #ifndef __STDAFX_H__
 #define __STDAFX_H__
 
-#include <types.h>
+#include <../include/types.h>
 #include <string>
 
 #ifdef _WINDOWS
