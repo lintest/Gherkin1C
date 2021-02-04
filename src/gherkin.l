@@ -54,10 +54,10 @@ asterisk      \*
 operator      \w+
 number        -?(\d*[\.\,])?\d+
 date          \d+\.\d+\.\d+|\d+\/\d+\/\d+
-param_d       \"([^\\\"\n\r]|.)*\"
-param_a       `([^\\`\n\r]|.)*`
-param_b       <([^\\>\n\r]|.)*>
-param_s       '([^\\'\n\r]|.)*'
+param_d       \"([^\\\"\n\r]|\\.)*\"
+param_a       `([^\\`\n\r]|\\.)*`
+param_b       <([^\\>\n\r]|\\.)*>
+param_s       '([^\\'\n\r]|\\.)*'
 comment       #|\/\/
 space         \h+
 colon         :
