@@ -9,7 +9,8 @@ GherkinParser::GherkinParser()
 {
 	provider.reset(new Gherkin::GherkinProvider());
 
-	AddProperty(u"Keywords", u"КлючевыеСлова", nullptr,
+	AddProperty(u"Keywords", u"КлючевыеСлова", 
+		[&](VH value) { value = this->provider->getKeywords(); },
 		[&](VH value) { this->provider->setKeywords(value); }
 	);
 

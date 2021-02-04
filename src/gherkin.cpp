@@ -105,6 +105,20 @@ namespace Gherkin {
 		return new GherkinKeyword(*this, toplevel);
 	}
 
+	std::string GherkinProvider::getKeywords() const
+	{
+		JSON json;
+		for (auto& language : keywords) {
+			JSON js;
+			for (auto& keyword : language.second) {
+				auto type = GherkinKeyword::type2str(keyword.type);
+				js[type].push_back(keyword.text);
+			}
+			json[language.first] = js;
+		}
+		return json.dump();
+	}
+
 	void GherkinProvider::setKeywords(const std::string& text)
 	{
 		auto json = JSON::parse(text);

@@ -66,17 +66,21 @@ namespace Gherkin {
 			KeywordType type;
 			std::string text;
 			std::vector<std::wstring> words;
+			friend class GherkinProvider;
 			friend class GherkinKeyword;
 		public:
 			Keyword(KeywordType type, const std::string& text);
-			bool comp(const Keyword& other) const { return words.size() > other.words.size(); }
 			GherkinKeyword* match(GherkinTokens& tokens) const;
+			bool comp(const Keyword& other) const { 
+				return words.size() > other.words.size(); 
+			}
 		};
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
 	private:
 		Keywords keywords;
 	public:
 		bool primitiveEscaping = false;
+		std::string getKeywords() const;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
 		std::string ParseFolder(const std::wstring& path) const;
