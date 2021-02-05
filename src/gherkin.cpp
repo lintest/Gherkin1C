@@ -200,7 +200,7 @@ namespace Gherkin {
 				j["message"] = e.what();
 				js["errors"].push_back(j);
 			}
-			js["filepath"] = path.string();
+			js["filepath"] = WC2MB(path.wstring());
 			json.push_back(js);
 		}
 		return json.dump();
