@@ -86,10 +86,10 @@ tag           @
 <LINE>{new_line}      { next(); start(INITIAL); }
 <LINE>{space}         // ignore
 <LINE>{comment}       { tail(TokenType::Comment); }
-<LINE>{operator}      { push(TokenType::Operator); }
 <LINE>{colon}         { push(TokenType::Colon); }
 <LINE>{date}          { push(TokenType::Date); }
 <LINE>{number}        { push(TokenType::Number); }
+<LINE>{operator}      { push(TokenType::Operator); }
 <LINE>{param_a}       { push(TokenType::Param, '`'); }
 <LINE>{param_b}       { push(TokenType::Param, '>'); }
 <LINE>{param_d}       { push(TokenType::Param, '\"'); }
