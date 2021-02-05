@@ -244,7 +244,8 @@ namespace Gherkin {
 			{ "then", KeywordType::Then },
 			{ "when", KeywordType::When },
 		};
-		return types.count(type) ? types[type] : KeywordType::None;
+		auto it = types.find(type);
+		return it == types.end() ? KeywordType::None : it->second;
 	}
 
 	std::string GherkinKeyword::type2str(KeywordType type)
