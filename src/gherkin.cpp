@@ -126,7 +126,6 @@ namespace Gherkin {
 		keywords.clear();
 		for (auto lang = json.begin(); lang != json.end(); ++lang) {
 			std::string language = lang.key();
-			if ((language != "en") && (language != "ru")) continue; // TODO: remove this line
 			auto& vector = keywords[language];
 			auto& types = lang.value();
 			for (auto type = types.begin(); type != types.end(); ++type) {
