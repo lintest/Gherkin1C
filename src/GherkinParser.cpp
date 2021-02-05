@@ -7,7 +7,7 @@ std::vector<std::u16string> GherkinParser::names = {
 
 GherkinParser::GherkinParser()
 {
-	provider.reset(new Gherkin::GherkinProvider());
+	provider.reset(new Gherkin::GherkinProvider(nullptr));
 
 	AddProperty(u"Keywords", u"КлючевыеСлова", 
 		[&](VH value) { value = this->provider->getKeywords(); },
@@ -54,3 +54,8 @@ void GherkinParser::ExitCurrentProcess(int64_t status)
 }
 
 #endif//_WINDOWS
+
+void GherkinParser::OnProgress(const std::string& message)
+{
+	ExternalEvent(u"ON_PROGRESS", MB2WCHAR(message));
+}

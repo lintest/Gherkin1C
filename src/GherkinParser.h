@@ -17,5 +17,7 @@ private:
 private:
 	std::unique_ptr<Gherkin::GherkinProvider> provider;
 	void ExitCurrentProcess(int64_t status);
+public:
+	void OnProgress(const std::string& message);
 };
 #endif //__GHERKINPARSER_H__

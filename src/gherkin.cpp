@@ -8,6 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include "GherkinParser.h"
 
 #ifdef USE_BOOST
 
@@ -45,12 +46,12 @@ static bool comparei(std::wstring a, std::wstring b)
 
 #endif//USE_BOOST
 
-static FILE* fileopen(const std::wstring& filepath)
+static FILE* fileopen(const boost::filesystem::path& path)
 {
 #ifdef _WINDOWS
-	return _wfopen(filepath.c_str(), L"rb");
+	return _wfopen(path.wstring().c_str(), L"rb");
 #else
-	return fopen(WC2MB(filepath).c_str(), "rb");
+	return fopen(path.string().c_str(), "rb");
 #endif
 }
 
@@ -157,7 +158,8 @@ namespace Gherkin {
 
 	std::string GherkinProvider::ParseFolder(const std::wstring& root) const
 	{
-		JSON json;
+		if (root.empty()) return {};
+		std::vector<boost::filesystem::path> files;
 		const std::wstring mask = L"^.+\\.feature$";
 		boost::wregex pattern(mask, boost::regex::icase);
 		boost::filesystem::recursive_directory_iterator end_itr; // Default ctor yields past-the-end
@@ -166,21 +168,47 @@ namespace Gherkin {
 				boost::wsmatch what;
 				std::wstring path = i->path().wstring();
 				std::wstring name = i->path().filename().wstring();
-				if (!boost::regex_match(name, what, pattern)) continue;
-				std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
-				reflex::Input input(file.get());
-				GherkinDocument doc(*this);
-				GherkinLexer lexer(input);
-				auto j = lexer.parse(doc);
-				j["filepath"] = WC2MB(path);
-				json.push_back(j);
+				if (boost::regex_match(name, what, pattern))
+					files.push_back(path);
 			}
+		}
+
+		JSON json;
+		size_t pos = 0;
+		for (auto& path : files) {
+			if (parser) {
+				JSON progress;
+				progress["pos"] = ++pos;
+				progress["max"] = files.size();
+				progress["path"] = path.string();
+				progress["name"] = path.filename().string();
+				parser->OnProgress(progress.dump());
+			}
+			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
+			reflex::Input input(file.get());
+			GherkinDocument doc(*this);
+			GherkinLexer lexer(input);
+			JSON js;
+			try {
+				js = lexer.parse(doc);
+			}
+			catch (const GherkinException& e) {
+				js["errors"].push_back(e);
+			}
+			catch (const std::exception& e) {
+				JSON j;
+				j["message"] = e.what();
+				js["errors"].push_back(j);
+			}
+			js["filepath"] = path.string();
+			json.push_back(js);
 		}
 		return json.dump();
 	}
 
 	std::string GherkinProvider::ParseFile(const std::wstring& path) const
 	{
+		if (path.empty()) return {};
 		std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
 		reflex::Input input(file.get());
 		GherkinDocument doc(*this);
@@ -190,6 +218,7 @@ namespace Gherkin {
 
 	std::string GherkinProvider::ParseText(const std::string& text) const
 	{
+		if (text.empty()) return {};
 		reflex::Input input(text);
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
@@ -548,6 +577,30 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinException::GherkinException(GherkinLexer& lexer, const std::string& message)
+		: std::exception(message.c_str()), line(lexer.lineno()), column(lexer.columno())
+	{
+	}
+
+	GherkinException::GherkinException(GherkinLexer& lexer, char const* const message)
+		: std::exception(message), line(lexer.lineno()), column(lexer.columno())
+	{
+	}
+
+	GherkinException::GherkinException(const GherkinException& src)
+		: std::exception(*this), line(src.line), column(src.column)
+	{
+	}
+
+	GherkinException::operator JSON() const
+	{
+		JSON json;
+		json["line"] = line;
+		json["column"] = column;
+		json["message"] = what();
+		return json;
+	}
+
 	GherkinError::GherkinError(GherkinLexer& lexer, const std::string& message)
 		: line(lexer.lineno()), column(lexer.columno()), message(message)
 	{
@@ -563,7 +616,9 @@ namespace Gherkin {
 		JSON json;
 		json["line"] = line;
 		json["text"] = message;
-		if (column) json["column"] = column;
+		if (column) 
+			json["column"] = column;
+			
 		return json;
 	}
 
@@ -618,7 +673,7 @@ namespace Gherkin {
 	{
 		std::stringstream stream_message;
 		stream_message << (message != NULL ? message : "lexer error") << " at " << lexer.lineno() << ":" << lexer.columno();
-		throw MB2WCHAR(stream_message.str());
+		throw GherkinException(lexer, stream_message.str());
 	}
 
 	void GherkinDocument::error(GherkinLexer& lexer, const std::string& error)
@@ -673,7 +728,7 @@ namespace Gherkin {
 			lexer.elementStack.pop_back();
 		}
 		if (lexer.elementStack.empty()) {
-			throw u"Element statck is empty";
+			throw GherkinException(lexer, "Element statck is empty");
 		}
 		auto parent = lexer.elementStack.back().second;
 		if (auto element = parent->push(lexer, line)) {

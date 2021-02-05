@@ -9,6 +9,7 @@
 using JSON = nlohmann::json;
 
 class GherkinLexer;
+class GherkinParser;
 
 namespace Gherkin {
 
@@ -71,14 +72,18 @@ namespace Gherkin {
 		public:
 			Keyword(KeywordType type, const std::string& text);
 			GherkinKeyword* match(GherkinTokens& tokens) const;
-			bool comp(const Keyword& other) const { 
-				return words.size() > other.words.size(); 
+			bool comp(const Keyword& other) const {
+				return words.size() > other.words.size();
 			}
 		};
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
 	private:
 		Keywords keywords;
+		GherkinParser* parser = nullptr;
 	public:
+		GherkinProvider(GherkinParser* parser)
+			: parser(parser) {}
+
 		bool primitiveEscaping = false;
 		std::string getKeywords() const;
 		void setKeywords(const std::string& text);
@@ -213,6 +218,18 @@ namespace Gherkin {
 	public:
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		virtual operator JSON() const override;
+	};
+
+	class GherkinException
+		: public std::exception {
+	private:
+		const size_t line = 0;
+		const size_t column = 0;
+	public:
+		GherkinException(GherkinLexer& lexer, const std::string& message);
+		GherkinException(GherkinLexer& lexer, char const* const message);
+		GherkinException(const GherkinException& src);
+		operator JSON() const;
 	};
 
 	class GherkinError {
