@@ -578,17 +578,17 @@ namespace Gherkin {
 	}
 
 	GherkinException::GherkinException(GherkinLexer& lexer, const std::string& message)
-		: std::exception(message.c_str()), line(lexer.lineno()), column(lexer.columno())
+		: std::runtime_error(message.c_str()), line(lexer.lineno()), column(lexer.columno())
 	{
 	}
 
 	GherkinException::GherkinException(GherkinLexer& lexer, char const* const message)
-		: std::exception(message), line(lexer.lineno()), column(lexer.columno())
+		: std::runtime_error(message), line(lexer.lineno()), column(lexer.columno())
 	{
 	}
 
 	GherkinException::GherkinException(const GherkinException& src)
-		: std::exception(*this), line(src.line), column(src.column)
+		: std::runtime_error(*this), line(src.line), column(src.column)
 	{
 	}
 

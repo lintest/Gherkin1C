@@ -221,7 +221,7 @@ namespace Gherkin {
 	};
 
 	class GherkinException
-		: public std::exception {
+		: public std::runtime_error {
 	private:
 		const size_t line = 0;
 		const size_t column = 0;
