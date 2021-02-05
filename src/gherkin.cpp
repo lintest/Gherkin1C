@@ -259,7 +259,7 @@ namespace Gherkin {
 		case KeywordType::Rule: return "Rule";
 		case KeywordType::Then: return "Then";
 		case KeywordType::When: return "When";
-		default: return {};
+		default: return "None";
 		}
 	}
 
