@@ -155,7 +155,7 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFolder(const std::wstring& root) const
+	std::string GherkinProvider::ParseFolder(const std::wstring& root, AbstractProgress* progress) const
 	{
 		if (root.empty()) return {};
 		std::vector<boost::filesystem::path> files;
@@ -175,13 +175,13 @@ namespace Gherkin {
 		JSON json;
 		size_t pos = 0;
 		for (auto& path : files) {
-			if (parser) {
-				JSON progress;
-				progress["pos"] = ++pos;
-				progress["max"] = files.size();
-				progress["path"] = path.string();
-				progress["name"] = path.filename().string();
-				parser->OnProgress(progress.dump());
+			if (progress) {
+				JSON info;
+				info["pos"] = ++pos;
+				info["max"] = files.size();
+				info["path"] = WC2MB(path.wstring());
+				info["name"] = WC2MB(path.filename().wstring());
+				progress->Send(info.dump());
 			}
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
 			reflex::Input input(file.get());
@@ -204,6 +204,9 @@ namespace Gherkin {
 		}
 		return json.dump();
 	}
+
+#ifdef _WINDOWS
+#endif// _WINDOWS
 
 	std::string GherkinProvider::ParseFile(const std::wstring& path) const
 	{

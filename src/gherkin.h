@@ -60,6 +60,11 @@ namespace Gherkin {
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
 
+	class AbstractProgress {
+	public:
+		virtual void Send(const std::string& msg) = 0;
+	};
+
 	class GherkinProvider {
 	public:
 		class Keyword {
@@ -81,14 +86,11 @@ namespace Gherkin {
 		Keywords keywords;
 		GherkinParser* parser = nullptr;
 	public:
-		GherkinProvider(GherkinParser* parser)
-			: parser(parser) {}
-
 		bool primitiveEscaping = false;
 		std::string getKeywords() const;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
-		std::string ParseFolder(const std::wstring& path) const;
+		std::string ParseFolder(const std::wstring& path, AbstractProgress* progress = nullptr) const;
 		std::string ParseFile(const std::wstring& path) const;
 		std::string ParseText(const std::string& text) const;
 	};
@@ -273,5 +275,12 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 }
+
+#ifdef _WINDOWS
+
+#define WM_PARSING_PROGRESS (WM_USER + 3)
+#define WM_PARSING_FINISHED (WM_USER + 4)
+
+#endif//_WINDOWS
 
 #endif//GHERKIN_H
