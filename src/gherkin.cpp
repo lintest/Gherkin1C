@@ -82,23 +82,39 @@ namespace Gherkin {
 
 			auto json = JSON::parse(text);
 
-			for (auto& tag : json["include"])
-				include.insert(lower(MB2WC(tag)));
-
-			for (auto& tag : json["exclude"])
-				exclude.insert(lower(MB2WC(tag)));
-		}
-		MatchType match(const GherkinTags& tags) {
-			for (auto tag : tags) {
-				if (include.find(MB2WC(tag)) != include.end())
-					return MatchType::Include;
+			for (auto& tag : json["include"]) {
+				std::wstring wstr = MB2WC(tag);
+				include.emplace(lower(wstr));
 			}
 
-			for (auto tag : tags)
-				if (exclude.find(MB2WC(tag)) != exclude.end())
-					return MatchType::Exclude;
+			for (auto& tag : json["exclude"]) {
+				std::wstring wstr = MB2WC(tag);
+				exclude.emplace(lower(wstr));
+			}
+		}
+		MatchType match(const GherkinTags& tags) {
+			if (!include.empty()) {
+				for (auto& tag : tags) {
+					std::wstring wstr = MB2WC(tag);
+					if (include.find(lower(wstr)) != include.end())
+						return MatchType::Include;
+				}
+			}
+			if (!exclude.empty())
+				for (auto& tag : tags) {
+					std::wstring wstr = MB2WC(tag);
+					if (exclude.find(lower(wstr)) != exclude.end())
+						return MatchType::Exclude;
+				}
 
 			return MatchType::Unknown;
+		}
+		bool match(const GherkinDocument& doc) {
+			switch (match(doc.getTags())) {
+			case MatchType::Include: return true;
+			case MatchType::Exclude: return false;
+			default: return include.empty();
+			}
 		}
 	};
 
@@ -235,6 +251,8 @@ namespace Gherkin {
 			JSON js;
 			try {
 				lexer.parse(doc);
+				if (!filter.match(doc)) 
+					continue;
 				js = JSON(doc);
 			}
 			catch (const GherkinException& e) {
@@ -712,7 +730,7 @@ namespace Gherkin {
 
 	void GherkinDocument::addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line)
 	{
-		scenarios.emplace_back(new GherkinDefinition(lexer, line));
+		scenarios.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
 		resetElementStack(lexer, *scenarios.back().get());
 	}
 
