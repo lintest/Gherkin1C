@@ -706,7 +706,7 @@ namespace Gherkin {
 		lexer.elementStack.emplace_back(-1, &element);
 	}
 
-	void GherkinDocument::setDefinition(std::unique_ptr<GherkinDefinition>& definition, GherkinLexer& lexer, GherkinLine& line)
+	void GherkinDocument::setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line)
 	{
 		if (definition) {
 			auto keyword = line.getKeyword();
@@ -727,10 +727,10 @@ namespace Gherkin {
 		}
 	}
 
-	void GherkinDocument::addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line)
+	void GherkinDocument::addDefinition(GherkinDefs& definitions, GherkinLexer& lexer, GherkinLine& line)
 	{
-		scenarios.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
-		resetElementStack(lexer, *scenarios.back().get());
+		definitions.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
+		resetElementStack(lexer, *definitions.back().get());
 	}
 
 	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
@@ -817,14 +817,14 @@ namespace Gherkin {
 			case KeywordType::Feature:
 				setDefinition(feature, lexer, line);
 				break;
-			case KeywordType::ScenarioOutline:
-				setDefinition(outline, lexer, line);
-				break;
 			case KeywordType::Background:
 				setDefinition(background, lexer, line);
 				break;
 			case KeywordType::Scenario:
-				addScenarioDefinition(lexer, line);
+				addDefinition(scenarios, lexer, line);
+				break;
+			case KeywordType::ScenarioOutline:
+				addDefinition(outlines, lexer, line);
 				break;
 			default:
 				addElement(lexer, line);
@@ -882,19 +882,14 @@ namespace Gherkin {
 		if (feature)
 			json["feature"] = JSON(*feature);
 
-		if (outline)
-			json["outline"] = JSON(*outline);
-
 		if (background)
 			json["background"] = JSON(*background);
 
-		if (!scenarios.empty()) {
-			JSON js;
-			for (auto& scen : scenarios)
-				js.push_back(*scen);
+		for (auto& scen : scenarios)
+			json["scenarios"].push_back(*scen);
 
-			json["scenarios"] = js;
-		}
+		for (auto& scen : outlines)
+			json["outlines"].push_back(*scen);
 
 		if (!errors.empty())
 			json["errors"] = JSON(errors);
