@@ -93,6 +93,12 @@ namespace Gherkin {
 			}
 		}
 		MatchType match(const GherkinTags& tags) {
+			if (!exclude.empty())
+				for (auto& tag : tags) {
+					std::wstring wstr = MB2WC(tag);
+					if (exclude.find(lower(wstr)) != exclude.end())
+						return MatchType::Exclude;
+				}
 			if (!include.empty()) {
 				for (auto& tag : tags) {
 					std::wstring wstr = MB2WC(tag);
@@ -100,19 +106,12 @@ namespace Gherkin {
 						return MatchType::Include;
 				}
 			}
-			if (!exclude.empty())
-				for (auto& tag : tags) {
-					std::wstring wstr = MB2WC(tag);
-					if (exclude.find(lower(wstr)) != exclude.end())
-						return MatchType::Exclude;
-				}
-
 			return MatchType::Unknown;
 		}
 		bool match(const GherkinDocument& doc) {
 			switch (match(doc.getTags())) {
-			case MatchType::Include: return true;
 			case MatchType::Exclude: return false;
+			case MatchType::Include: return true;
 			default: return include.empty();
 			}
 		}
