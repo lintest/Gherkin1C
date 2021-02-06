@@ -89,11 +89,12 @@ namespace Gherkin {
 				exclude.insert(lower(MB2WC(tag)));
 		}
 		MatchType match(const GherkinTags& tags) {
-			for (auto& tag : tags)
+			for (auto tag : tags) {
 				if (include.find(MB2WC(tag)) != include.end())
 					return MatchType::Include;
+			}
 
-			for (auto& tag : tags)
+			for (auto tag : tags)
 				if (exclude.find(MB2WC(tag)) != exclude.end())
 					return MatchType::Exclude;
 
