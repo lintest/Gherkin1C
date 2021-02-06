@@ -81,6 +81,11 @@
 					<CommandName>Form.Command.СканироватьПапку</CommandName>
 					<ExtendedTooltip name="СканироватьПапкуРасширеннаяПодсказка" id="28"/>
 				</Button>
+				<Button name="ПрерватьСканирование" id="32">
+					<Type>UsualButton</Type>
+					<CommandName>Form.Command.ПрерватьСканирование</CommandName>
+					<ExtendedTooltip name="ПрерватьСканированиеРасширеннаяПодсказка" id="33"/>
+				</Button>
 			</ChildItems>
 		</UsualGroup>
 		<CheckBoxField name="ПримитивноеЭкранирование" id="18">
@@ -239,7 +244,7 @@
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Сканировать папку</v8:content>
+					<v8:content>Сканировать</v8:content>
 				</v8:item>
 			</Title>
 			<ToolTip>
@@ -249,6 +254,21 @@
 				</v8:item>
 			</ToolTip>
 			<Action>СканироватьПапку</Action>
+		</Command>
+		<Command name="ПрерватьСканирование" id="4">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Прервать</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Прервать сканирование</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ПрерватьСканирование</Action>
 		</Command>
 	</Commands>
 </Form>
