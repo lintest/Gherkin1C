@@ -675,8 +675,14 @@
     ],
     "feature": [
       "Feature",
+      "Functionality",
       "Business Need",
       "Ability"
+    ],
+    "if": [
+      "If",
+      "ElseIf",
+      "Else"
     ],
     "given": [
       "Given"
@@ -2432,6 +2438,11 @@
       "Функциональность",
       "Функционал",
       "Свойство"
+    ],
+    "if": [
+      "Если",
+      "ИначеЕсли",
+      "Иначе"
     ],
     "given": [
       "Допустим",

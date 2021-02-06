@@ -155,7 +155,7 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFolder(const std::wstring& root, AbstractProgress* progress) const
+	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& filter, AbstractProgress* progress) const
 	{
 		if (root.empty()) return {};
 
@@ -244,6 +244,7 @@ namespace Gherkin {
 			{ "but", KeywordType::But },
 			{ "examples", KeywordType::Examples },
 			{ "feature", KeywordType::Feature },
+			{ "if", KeywordType::If },
 			{ "given", KeywordType::Given },
 			{ "rule", KeywordType::Rule },
 			{ "scenario", KeywordType::Scenario },

@@ -42,6 +42,7 @@ namespace Gherkin {
 		Examples,
 		And,
 		But,
+		If,
 		Given,
 		Rule,
 		Then,
@@ -91,7 +92,7 @@ namespace Gherkin {
 		std::string getKeywords() const;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
-		std::string ParseFolder(const std::wstring& path, AbstractProgress* progress = nullptr) const;
+		std::string ParseFolder(const std::wstring& path, const std::string& filter, AbstractProgress* progress = nullptr) const;
 		std::string ParseFile(const std::wstring& path) const;
 		std::string ParseText(const std::string& text) const;
 		void AbortScan() { ++identifier; };

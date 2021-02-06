@@ -28,7 +28,7 @@ GherkinParser::GherkinParser()
 	);
 
 	AddFunction(u"ParseFolder", u"ПрочитатьПапку",
-		[&](VH filepath) {  this->result = this->provider->ParseFolder(filepath); }
+		[&](VH filepath, VH filter) {  this->result = this->provider->ParseFolder(filepath, filter); }, { {1, u""} }
 	);
 
 	AddFunction(u"ParseFile", u"ПрочитатьФайл",
@@ -43,7 +43,7 @@ GherkinParser::GherkinParser()
 	CreateProgressMonitor();
 
 	AddProcedure(u"ScanFolder", u"СканироватьПапку",
-		[&](VH filepath) {  this->ScanFolder(filepath); }
+		[&](VH filepath, VH filter) {  this->ScanFolder(filepath, filter); }, { {1, u""} }
 	);
 
 	AddProcedure(u"AbortScan", u"ПрерватьСканирование",
@@ -59,18 +59,16 @@ class GherkinProgress
 private:
 	HWND hWnd;
 public:
-	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring path, HWND hWnd)
-		: provider(provider), path(path), hWnd(hWnd) {}
+	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring path, const std::string& filter, HWND hWnd)
+		: provider(provider), path(path), filter(filter), hWnd(hWnd) {}
 	virtual void Send(const std::string& msg) override {
 		auto data = (LPARAM)new std::string(msg);
 		::SendMessageW(hWnd, WM_PARSING_PROGRESS, 0, data);
 	}
-	void OnFinished(const std::string& msg) {
-		auto data = (LPARAM)new std::string(msg);
-		::SendMessageW(hWnd, WM_PARSING_FINISHED, 0, data);
-	}
 	const Gherkin::GherkinProvider& provider;
 	const std::wstring path;
+	const std::string filter;
+	void Scan();
 };
 
 GherkinParser::~GherkinParser()
@@ -98,11 +96,16 @@ static LRESULT CALLBACK MonitorWndProc(HWND hWnd, UINT message, WPARAM wParam, L
 	}
 }
 
+void GherkinProgress::Scan() {
+	auto text = provider.ParseFolder(path, filter, this);
+	auto data = (LPARAM)new std::string(text);
+	::SendMessageW(hWnd, WM_PARSING_FINISHED, 0, data);
+}
+
 static DWORD WINAPI ParserThreadProc(LPVOID lpParam)
 {
 	std::unique_ptr<GherkinProgress> progress((GherkinProgress*)lpParam);
-	auto text = progress->provider.ParseFolder(progress->path, progress.get());
-	progress->OnFinished(text);
+	progress->Scan();
 	return 0;
 }
 
@@ -126,9 +129,9 @@ void GherkinParser::OnProgress(UINT id, const std::string& data)
 	ExternalEvent(message, MB2WCHAR(data));
 }
 
-void GherkinParser::ScanFolder(const std::wstring& path)
+void GherkinParser::ScanFolder(const std::wstring& path, const std::string& filter)
 {
-	auto progress = new GherkinProgress(*provider, path, hWndMonitor);
+	auto progress = new GherkinProgress(*provider, path, filter, hWndMonitor);
 	CreateThread(0, NULL, ParserThreadProc, (LPVOID)progress, NULL, NULL);
 }
 
