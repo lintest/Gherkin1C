@@ -48,6 +48,10 @@ static bool comparei(std::wstring a, std::wstring b)
 
 static FILE* fileopen(const boost::filesystem::path& path)
 {
+	std::wofstream f(L"C:\\Cpp\\current.txt");
+	f << path.wstring();
+	f.close();
+
 #ifdef _WINDOWS
 	return _wfopen(path.wstring().c_str(), L"rb");
 #else
@@ -63,6 +67,18 @@ namespace Gherkin {
 		static const reflex::Pattern pattern(regex);
 		auto matcher = reflex::Matcher(pattern, text);
 		return matcher.find() ? matcher.text() : std::string();
+	}
+
+	static std::vector<std::wstring> split(const std::string& text) {
+		static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
+		static const reflex::Pattern pattern(regex);
+		auto matcher = reflex::Matcher(pattern, text);
+		std::vector<std::wstring> result;
+		while (matcher.find() != 0) {
+			auto word = lower(matcher.wstr());
+			result.push_back(word);
+		}
+		return result;
 	}
 
 	enum class MatchType {
@@ -117,57 +133,72 @@ namespace Gherkin {
 		}
 	};
 
-	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string& text)
-		:type(type), text(text)
+	void GherkinProvider::Keyword::add(KeywordType type, const std::string& text
+		, const std::vector<std::wstring>& words
+		, const std::vector<std::wstring>::const_iterator& it) 
 	{
-		static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
-		static const reflex::Pattern pattern(regex);
-		auto matcher = reflex::Matcher(pattern, text);
-		while (matcher.find() != 0) {
-			words.push_back(matcher.wstr());
+		if (it == words.end()) {
+			this->type = type;
+			this->text = text;
+		}
+		else {
+			const std::wstring &word = *it;
+			items[word].add(type, text, words, it + 1);
 		}
 	}
 
-	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens) const
+	GherkinKeyword* GherkinProvider::Keyword::create(GherkinTokens& tokens, GherkinTokens::iterator& it, bool topword) const
 	{
-		if (words.size() > tokens.size())
+		if (text.empty()) 
 			return nullptr;
 
-		for (size_t i = 0; i < words.size(); ++i) {
-			if (tokens[i].type != TokenType::Operator)
-				return nullptr;
-
-			if (!comparei(words[i], tokens[i].wstr))
-				return nullptr;
+		for (auto i = tokens.begin(); i != it; ++i) {
+			if (i->type == TokenType::Operator) 
+				i->type = TokenType::Keyword;
+			else 
+				throw std::runtime_error("Keyword process error");
 		}
+		return new GherkinKeyword(*this, topword);
+	}
 
-		bool toplevel = false;
-		size_t keynum = words.end() - words.begin();
-		for (auto& t : tokens) {
-			if (keynum > 0) {
-				t.type = TokenType::Keyword;
-				keynum--;
-			}
-			else {
-				if (t.type == TokenType::Colon)
-					toplevel = true;
-				break;
-			}
+	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens, GherkinTokens::iterator& it) const
+	{
+		if (it == tokens.end()) 
+			return create(tokens, it, false);
+
+		if (it->type == TokenType::Colon)
+			return create(tokens, it, true);
+
+		if (it->type != TokenType::Operator) 
+			return create(tokens, it, false);
+
+		std::wstring word = it->wstr;
+		auto w = items.find(lower(word));
+		if (w != items.end())
+			return w->second.match(tokens, it + 1);
+		
+		bool topword = (it + 1)->type == TokenType::Colon;
+		return create(tokens, it, topword);
+	}
+
+	void GherkinProvider::Keyword::get(JSON& json) const
+	{
+		if (!text.empty()) {
+			auto key = GherkinKeyword::type2str(type);
+			json[key].push_back(text);
 		}
-
-		return new GherkinKeyword(*this, toplevel);
+		for (auto const& [key, value] : items) {
+			value.get(json);
+		}
 	}
 
 	std::string GherkinProvider::getKeywords() const
 	{
 		JSON json;
-		for (auto& language : keywords) {
+		for (auto const& [key, value] : keywords) {
 			JSON js;
-			for (auto& keyword : language.second) {
-				auto type = GherkinKeyword::type2str(keyword.type);
-				js[type].push_back(keyword.text);
-			}
-			json[language.first] = js;
+			value.get(js);
+			json[key] = js;
 		}
 		return json.dump();
 	}
@@ -178,7 +209,7 @@ namespace Gherkin {
 		keywords.clear();
 		for (auto lang = json.begin(); lang != json.end(); ++lang) {
 			std::string language = lang.key();
-			auto& vector = keywords[language];
+			auto& map = keywords[language];
 			auto& types = lang.value();
 			for (auto type = types.begin(); type != types.end(); ++type) {
 				KeywordType t = GherkinKeyword::str2type(type.key());
@@ -186,25 +217,22 @@ namespace Gherkin {
 				if (words.is_array()) {
 					for (auto word = words.begin(); word != words.end(); ++word) {
 						std::string text = trim(*word);
+						auto words = split(text);
 						if (text == "*") continue;
-						vector.push_back({ t, *word });
+						if (words.empty()) continue;
+						map.add(t, text, words, words.begin());
 					}
 				}
 			}
-			std::sort(vector.begin(), vector.end(),
-				[](const Keyword& a, const Keyword& b) -> bool { return a.comp(b); }
-			);
 		}
 	}
 
 	GherkinKeyword* GherkinProvider::matchKeyword(const std::string& lang, GherkinTokens& tokens) const
 	{
 		std::string language = lang.empty() ? std::string("ru") : lang;
-		for (auto& keyword : keywords.at(language)) {
-			auto matched = keyword.match(tokens);
-			if (matched) return matched;
-		}
-		return nullptr;
+		auto it = keywords.find(language);
+		if (it == keywords.end()) return nullptr;
+		return it->second.match(tokens, tokens.begin());
 	}
 
 	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& tags, AbstractProgress* progress) const

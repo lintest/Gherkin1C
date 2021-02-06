@@ -68,21 +68,25 @@ namespace Gherkin {
 
 	class GherkinProvider {
 	public:
+		class Keyword;
+	public:
 		class Keyword {
 		private:
 			KeywordType type;
 			std::string text;
-			std::vector<std::wstring> words;
 			friend class GherkinProvider;
 			friend class GherkinKeyword;
+			std::map<std::wstring, Keyword> items;
 		public:
-			Keyword(KeywordType type, const std::string& text);
-			GherkinKeyword* match(GherkinTokens& tokens) const;
-			bool comp(const Keyword& other) const {
-				return words.size() > other.words.size();
-			}
+			Keyword() : type(KeywordType::None) {}
+			void add(KeywordType type, const std::string& text
+				, const std::vector<std::wstring>& words
+				, const std::vector<std::wstring>::const_iterator& it);
+			void get(JSON& json) const;
+			GherkinKeyword* create(GherkinTokens& tokens, GherkinTokens::iterator& it, bool topword) const;
+			GherkinKeyword* match(GherkinTokens& tokens, GherkinTokens::iterator& it) const;
 		};
-		using Keywords = std::map<std::string, std::vector<Keyword>>;
+		using Keywords = std::map<std::string, Keyword>;
 	private:
 		Keywords keywords;
 		size_t identifier = 0;
@@ -113,7 +117,7 @@ namespace Gherkin {
 		KeywordType getType() const { return type; }
 		operator JSON() const;
 	};
- 
+
 	class GherkinToken {
 	private:
 		std::string type2str() const;
