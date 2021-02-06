@@ -65,6 +65,12 @@ namespace Gherkin {
 		return matcher.find() ? matcher.text() : std::string();
 	}
 
+	enum class MatchType {
+		Include,
+		Exclude,
+		Unknown
+	};
+
 	class GherkinFilter {
 	private:
 		std::set<std::wstring> include;
@@ -81,6 +87,17 @@ namespace Gherkin {
 
 			for (auto& tag : json["exclude"])
 				exclude.insert(lower(MB2WC(tag)));
+		}
+		MatchType match(const GherkinTags& tags) {
+			for (auto& tag : tags)
+				if (include.find(MB2WC(tag)) != include.end())
+					return MatchType::Include;
+
+			for (auto& tag : tags)
+				if (exclude.find(MB2WC(tag)) != exclude.end())
+					return MatchType::Exclude;
+
+			return MatchType::Unknown;
 		}
 	};
 
