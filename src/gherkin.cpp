@@ -65,6 +65,25 @@ namespace Gherkin {
 		return matcher.find() ? matcher.text() : std::string();
 	}
 
+	class GherkinFilter {
+	private:
+		std::set<std::wstring> include;
+		std::set<std::wstring> exclude;
+	public:
+		GherkinFilter(const std::string& text) {
+			if (text.empty())
+				return;
+
+			auto json = JSON::parse(text);
+
+			for (auto& tag : json["include"])
+				include.insert(lower(MB2WC(tag)));
+
+			for (auto& tag : json["exclude"])
+				exclude.insert(lower(MB2WC(tag)));
+		}
+	};
+
 	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string& text)
 		:type(type), text(text)
 	{
@@ -155,11 +174,12 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& filter, AbstractProgress* progress) const
+	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& tags, AbstractProgress* progress) const
 	{
 		if (root.empty()) return {};
 
 		size_t id = identifier;
+		GherkinFilter filter(tags);
 		std::vector<boost::filesystem::path> files;
 		const std::wstring mask = L"^.+\\.feature$";
 		boost::wregex pattern(mask, boost::regex::icase);

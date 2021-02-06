@@ -113,7 +113,7 @@ namespace Gherkin {
 		KeywordType getType() const { return type; }
 		operator JSON() const;
 	};
-
+ 
 	class GherkinToken {
 	private:
 		std::string type2str() const;
