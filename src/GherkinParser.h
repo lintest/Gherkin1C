@@ -19,6 +19,7 @@ public:
 	void CreateProgressMonitor();
 	void OnProgress(UINT id, const std::string& data);
 	void ScanFolder(const std::wstring& path);
+	void AbortScan();
 #endif//_WINDOWS
 private:
 	static std::vector<std::u16string> names;

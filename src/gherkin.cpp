@@ -158,6 +158,8 @@ namespace Gherkin {
 	std::string GherkinProvider::ParseFolder(const std::wstring& root, AbstractProgress* progress) const
 	{
 		if (root.empty()) return {};
+
+		size_t id = identifier;
 		std::vector<boost::filesystem::path> files;
 		const std::wstring mask = L"^.+\\.feature$";
 		boost::wregex pattern(mask, boost::regex::icase);
@@ -170,11 +172,16 @@ namespace Gherkin {
 				if (boost::regex_match(name, what, pattern))
 					files.push_back(path);
 			}
+			if (id != identifier) 
+				return {};
 		}
 
 		JSON json;
 		size_t pos = 0;
 		for (auto& path : files) {
+			if (id != identifier) 
+				return json.dump();
+
 			if (progress) {
 				JSON info;
 				info["pos"] = ++pos;

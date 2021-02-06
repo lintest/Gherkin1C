@@ -84,6 +84,7 @@ namespace Gherkin {
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
 	private:
 		Keywords keywords;
+		size_t identifier = 0;
 		GherkinParser* parser = nullptr;
 	public:
 		bool primitiveEscaping = false;
@@ -93,6 +94,7 @@ namespace Gherkin {
 		std::string ParseFolder(const std::wstring& path, AbstractProgress* progress = nullptr) const;
 		std::string ParseFile(const std::wstring& path) const;
 		std::string ParseText(const std::string& text) const;
+		void AbortScan() { ++identifier; };
 	};
 
 	class GherkinKeyword {

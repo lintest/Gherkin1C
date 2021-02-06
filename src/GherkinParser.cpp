@@ -45,6 +45,10 @@ GherkinParser::GherkinParser()
 	AddProcedure(u"ScanFolder", u"СканироватьПапку",
 		[&](VH filepath) {  this->ScanFolder(filepath); }
 	);
+
+	AddProcedure(u"AbortScan", u"ПрерватьСканирование",
+		[&]() {  this->AbortScan(); }
+	);
 #endif//_WINDOWS
 }
 
@@ -112,7 +116,7 @@ void GherkinParser::CreateProgressMonitor()
 	wndClass.lpfnWndProc = MonitorWndProc;
 	RegisterClass(&wndClass);
 
-	hWndMonitor = CreateWindow(wsClassName, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hModule, 0);
+	hWndMonitor = CreateWindowW(wsClassName, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hModule, 0);
 	SetWindowLongPtr(hWndMonitor, GWLP_USERDATA, (LONG_PTR)this);
 }
 
@@ -126,6 +130,11 @@ void GherkinParser::ScanFolder(const std::wstring& path)
 {
 	auto progress = new GherkinProgress(*provider, path, hWndMonitor);
 	CreateThread(0, NULL, ParserThreadProc, (LPVOID)progress, NULL, NULL);
+}
+
+void GherkinParser::AbortScan()
+{
+	provider->AbortScan();
 }
 
 #else//_WINDOWS
