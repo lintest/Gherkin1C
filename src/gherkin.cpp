@@ -234,7 +234,8 @@ namespace Gherkin {
 			GherkinLexer lexer(input);
 			JSON js;
 			try {
-				js = lexer.parse(doc);
+				lexer.parse(doc);
+				js = JSON(doc);
 			}
 			catch (const GherkinException& e) {
 				js["errors"].push_back(e);
@@ -260,7 +261,8 @@ namespace Gherkin {
 		reflex::Input input(file.get());
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		return lexer.parse(doc).dump();
+		lexer.parse(doc);
+		return JSON(doc).dump();
 	}
 
 	std::string GherkinProvider::ParseText(const std::string& text) const
@@ -269,7 +271,8 @@ namespace Gherkin {
 		reflex::Input input(text);
 		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
-		return lexer.parse(doc).dump();
+		lexer.parse(doc);
+		return JSON(doc).dump();
 	}
 
 	KeywordType GherkinKeyword::str2type(const std::string& text)
