@@ -619,6 +619,11 @@ namespace Gherkin {
 	GherkinDefinition::GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), keyword(*line.getKeyword())
 	{
+		switch (keyword.getType()) {
+		case KeywordType::Scenario:
+		case KeywordType::ScenarioOutline:
+			tokens = line.getTokens();
+		}
 	}
 
 	GherkinElement* GherkinDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
