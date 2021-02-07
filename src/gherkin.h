@@ -251,18 +251,16 @@ namespace Gherkin {
 	class GherkinDocument {
 	private:
 		using GherkinDef = std::unique_ptr<GherkinDefinition>;
-		using GherkinDefs = std::vector<GherkinDef>;
 		std::string language;
 		GherkinDef feature;
 		GherkinDef background;
-		GherkinDefs scenarios;
-		GherkinDefs outlines;
+		std::vector<GherkinDef> scenarios;
 		std::vector<GherkinError> errors;
 	private:
 		void setLanguage(GherkinLexer& lexer);
 		void processLine(GherkinLexer& lexer, GherkinLine& line);
 		void setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line);
-		void addDefinition(GherkinDefs& definitions, GherkinLexer& lexer, GherkinLine& line);
+		void addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line);
 		void resetElementStack(GherkinLexer& lexer, GherkinElement& element);
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);

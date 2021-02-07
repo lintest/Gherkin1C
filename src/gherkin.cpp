@@ -8,7 +8,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
-#include "GherkinParser.h"
 
 #ifdef USE_BOOST
 
@@ -727,10 +726,10 @@ namespace Gherkin {
 		}
 	}
 
-	void GherkinDocument::addDefinition(GherkinDefs& definitions, GherkinLexer& lexer, GherkinLine& line)
+	void GherkinDocument::addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line)
 	{
-		definitions.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
-		resetElementStack(lexer, *definitions.back().get());
+		scenarios.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
+		resetElementStack(lexer, *scenarios.back().get());
 	}
 
 	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
@@ -821,10 +820,8 @@ namespace Gherkin {
 				setDefinition(background, lexer, line);
 				break;
 			case KeywordType::Scenario:
-				addDefinition(scenarios, lexer, line);
-				break;
 			case KeywordType::ScenarioOutline:
-				addDefinition(outlines, lexer, line);
+				addScenarioDefinition(lexer, line);
 				break;
 			default:
 				addElement(lexer, line);
@@ -887,9 +884,6 @@ namespace Gherkin {
 
 		for (auto& scen : scenarios)
 			json["scenarios"].push_back(*scen);
-
-		for (auto& scen : outlines)
-			json["outlines"].push_back(*scen);
 
 		if (!errors.empty())
 			json["errors"] = JSON(errors);

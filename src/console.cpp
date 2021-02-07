@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "gherkin.h"
 #include <string>
 #include <fstream>
@@ -7,6 +6,12 @@
 #include <codecvt>
 
 using namespace Gherkin;
+
+#ifdef _WINDOWS
+#define WCHAR_T wchar_t
+#else
+#define WCHAR_T uint16_t
+#endif //_WINDOWS
 
 std::string WC2MB(const std::wstring& wstr)
 {
@@ -53,6 +58,32 @@ std::u16string MB2WCHAR(std::string_view src) {
 #endif//_WINDOWS
 }
 
+std::locale locale_ru = std::locale("ru_RU.UTF-8");
+
+std::u16string upper(std::u16string& str)
+{
+	std::transform(str.begin(), str.end(), str.begin(), [](wchar_t ch) { return std::toupper(ch, locale_ru); });
+	return str;
+}
+
+std::u16string lower(std::u16string& str)
+{
+	std::transform(str.begin(), str.end(), str.begin(), [](wchar_t ch) { return std::tolower(ch, locale_ru); });
+	return str;
+}
+
+std::wstring upper(std::wstring& str)
+{
+	std::transform(str.begin(), str.end(), str.begin(), [](wchar_t ch) { return std::toupper(ch, locale_ru); });
+	return str;
+}
+
+std::wstring lower(std::wstring& str)
+{
+	std::transform(str.begin(), str.end(), str.begin(), [](wchar_t ch) { return std::tolower(ch, locale_ru); });
+	return str;
+}
+
 int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 {
 	GherkinProvider provider;
@@ -68,7 +99,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 	}
 
 	if (argc > 1) {
-		std::cout << provider.ParseFolder(argv[1]);
+		std::cout << provider.ParseFolder(argv[1], {});
 	}
 
 	return 0;
