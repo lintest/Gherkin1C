@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <boost/filesystem.hpp>
 #include "json.hpp"
 
 using JSON = nlohmann::json;
@@ -68,6 +69,7 @@ namespace Gherkin {
 
 	class AbstractProgress {
 	public:
+		virtual void Step(size_t max, const boost::filesystem::path& path) = 0;
 		virtual void Send(const std::string& msg) = 0;
 	};
 

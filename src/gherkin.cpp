@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <reflex/matcher.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
 #ifdef USE_BOOST
@@ -230,18 +229,14 @@ namespace Gherkin {
 
 		JSON json;
 		size_t pos = 0;
+		size_t max = files.size();
 		for (auto& path : files) {
 			if (id != identifier) 
 				return json.dump();
 
-			if (progress) {
-				JSON info;
-				info["pos"] = ++pos;
-				info["max"] = files.size();
-				info["path"] = WC2MB(path.wstring());
-				info["name"] = WC2MB(path.filename().wstring());
-				progress->Send(info.dump());
-			}
+			if (progress) 
+				progress->Step(max, path);
+
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
 			reflex::Input input(file.get());
 			GherkinDocument doc(*this);
