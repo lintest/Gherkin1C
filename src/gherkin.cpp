@@ -90,23 +90,25 @@ namespace Gherkin {
 				exclude.emplace(lower(wstr));
 			}
 		}
-		MatchType match(const GherkinTags& tags) {
+		MatchType match(const GherkinTags& tags) const {
 			if (!exclude.empty())
 				for (auto& tag : tags) {
 					std::wstring wstr = MB2WC(tag);
 					if (exclude.find(lower(wstr)) != exclude.end())
 						return MatchType::Exclude;
 				}
-			if (!include.empty()) {
+			if (include.empty())
+				return MatchType::Include;
+			else {
 				for (auto& tag : tags) {
 					std::wstring wstr = MB2WC(tag);
 					if (include.find(lower(wstr)) != include.end())
 						return MatchType::Include;
 				}
+				return MatchType::Unknown;
 			}
-			return MatchType::Unknown;
 		}
-		bool match(const GherkinDocument& doc) {
+		bool match(const GherkinDocument& doc) const {
 			switch (match(doc.getTags())) {
 			case MatchType::Exclude: return false;
 			case MatchType::Include: return true;
@@ -223,7 +225,7 @@ namespace Gherkin {
 				if (boost::regex_match(name, what, pattern))
 					files.push_back(path);
 			}
-			if (id != identifier) 
+			if (id != identifier)
 				return {};
 		}
 
@@ -231,10 +233,10 @@ namespace Gherkin {
 		size_t pos = 0;
 		size_t max = files.size();
 		for (auto& path : files) {
-			if (id != identifier) 
+			if (id != identifier)
 				return json.dump();
 
-			if (progress) 
+			if (progress)
 				progress->Step(max, path);
 
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
@@ -244,20 +246,19 @@ namespace Gherkin {
 			JSON js;
 			try {
 				lexer.parse(doc);
-				if (!filter.match(doc)) 
-					continue;
-				js = JSON(doc);
+				js = doc.dump(filter);
 			}
 			catch (const GherkinException& e) {
 				js["errors"].push_back(e);
 			}
 			catch (const std::exception& e) {
-				JSON j;
-				j["message"] = e.what();
+				JSON j = { {"message", e.what()} };
 				js["errors"].push_back(j);
 			}
-			js["filepath"] = WC2MB(path.wstring());
-			json.push_back(js);
+			if (!js.empty()) {
+				js["filepath"] = WC2MB(path.wstring());
+				json.push_back(js);
+			}
 		}
 		return json.dump();
 	}
@@ -331,7 +332,9 @@ namespace Gherkin {
 		JSON json;
 		json["text"] = text;
 		json["type"] = type2str(type);
-		if (toplevel) json["toplevel"] = toplevel;
+		if (toplevel) 
+			json["toplevel"] = toplevel;
+
 		return json;
 	}
 
@@ -460,7 +463,9 @@ namespace Gherkin {
 		json["tokens"] = js;
 		json["text"] = text;
 		json["line"] = lineNumber;
-		if (keyword) json["keyword"] = *keyword;
+		if (keyword) 
+			json["keyword"] = *keyword;
+
 		return json;
 	}
 
@@ -556,7 +561,7 @@ namespace Gherkin {
 		json["text"] = text;
 
 		auto snippet = getSnippet();
-		if (!snippet.empty()) 
+		if (!snippet.empty())
 			json["snippet"] = WC2MB(snippet);
 
 		if (!items.empty()) {
@@ -638,7 +643,7 @@ namespace Gherkin {
 	GherkinSnippet GherkinDefinition::getSnippet() const
 	{
 		switch (keyword.getType()) {
-		case KeywordType::Feature: 
+		case KeywordType::Feature:
 		case KeywordType::Background:
 			return {};
 		default:
@@ -655,6 +660,7 @@ namespace Gherkin {
 			json["tokens"] = tokens;
 		if (examples)
 			json["examples"] = JSON(*examples);
+
 		return json;
 	}
 
@@ -730,9 +736,9 @@ namespace Gherkin {
 		JSON json;
 		json["line"] = line;
 		json["text"] = message;
-		if (column) 
+		if (column)
 			json["column"] = column;
-			
+
 		return json;
 	}
 
@@ -925,7 +931,7 @@ namespace Gherkin {
 		}
 	}
 
-	static bool hasExportSnippets(const GherkinTags& tags) 
+	static bool hasExportSnippets(const GherkinTags& tags)
 	{
 		const std::string test = "ExportScenarios";
 		for (auto& tag : tags) {
@@ -954,9 +960,50 @@ namespace Gherkin {
 		return feature ? feature->getTags() : empty;
 	}
 
-	std::string GherkinDocument::dump() const
+	JSON GherkinDocument::dump(const GherkinFilter& filter) const
 	{
-		return JSON(*this).dump();
+		JSON json;
+		json["language"] = language;
+		MatchType match = MatchType::Unknown;
+
+		if (feature) {
+			match = filter.match(feature->getTags());
+			if (match == MatchType::Exclude)
+				return JSON();
+
+			json["feature"] = JSON(*feature);
+		}
+
+		if (scenarios.empty()) {
+			if (match == MatchType::Unknown)
+				return JSON();
+		}
+		else {
+			for (auto& scen : scenarios) {
+				switch (filter.match(scen->getTags())) {
+				case MatchType::Exclude:
+					continue;
+				case MatchType::Include:
+					break;
+				default:
+					if (match == MatchType::Unknown)
+						continue;
+					else
+						break;
+				}
+				json["scenarios"].push_back(*scen);
+			}
+			if (json["scenarios"].empty())
+				return JSON();
+		}
+
+		if (background)
+			json["background"] = JSON(*background);
+
+		if (!errors.empty())
+			json["errors"] = JSON(errors);
+
+		return json;
 	}
 
 	GherkinDocument::operator JSON() const

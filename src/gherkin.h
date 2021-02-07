@@ -53,6 +53,7 @@ namespace Gherkin {
 
 	class GherkinProvider;
 	class GherkinDocument;
+	class GherkinFilter;
 	class GherkinDefinition;
 	class GherkinKeyword;
 	class GherkinToken;
@@ -290,7 +291,7 @@ namespace Gherkin {
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		GherkinSnippets getExportSnippets() const;
 		const GherkinTags& getTags() const;
-		std::string dump() const;
+		JSON dump(const GherkinFilter &filter) const;
 		operator JSON() const;
 	};
 }
