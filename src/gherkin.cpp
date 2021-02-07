@@ -444,6 +444,18 @@ namespace Gherkin {
 		return keyword.get();
 	}
 
+	GherkinSnippet snippet(const GherkinTokens& tokens)
+	{
+		std::wstringstream ss;
+		for (auto& token : tokens) {
+			if (token.getType() == TokenType::Operator) {
+				auto wstr = token.getWstr();
+				ss << lower(wstr);
+			}
+		}
+		return ss.str();
+	}
+
 	GherkinLine::operator JSON() const
 	{
 		JSON json, js;
@@ -548,6 +560,10 @@ namespace Gherkin {
 		json["line"] = lineNumber;
 		json["text"] = text;
 
+		auto snippet = getSnippet();
+		if (!snippet.empty()) 
+			json["snippet"] = WC2MB(snippet);
+
 		if (!items.empty()) {
 			JSON js;
 			for (auto& item : items)
@@ -619,6 +635,17 @@ namespace Gherkin {
 			return GherkinElement::push(lexer, line);
 	}
 
+	GherkinSnippet GherkinDefinition::getSnippet() const
+	{
+		switch (keyword.getType()) {
+		case KeywordType::Feature: 
+		case KeywordType::Background:
+			return {};
+		default:
+			return snippet(tokens);
+		}
+	}
+
 	GherkinDefinition::operator JSON() const
 	{
 		JSON json = GherkinElement::operator JSON();
@@ -634,6 +661,11 @@ namespace Gherkin {
 	GherkinStep::GherkinStep(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), keyword(*line.getKeyword()), tokens(line.getTokens())
 	{
+	}
+
+	GherkinSnippet GherkinStep::getSnippet() const
+	{
+		return snippet(tokens);
 	}
 
 	GherkinStep::operator JSON() const
@@ -891,6 +923,29 @@ namespace Gherkin {
 			}
 			return;
 		}
+	}
+
+	static bool hasExportSnippets(const GherkinTags& tags) 
+	{
+		const std::string test = "ExportScenarios";
+		for (auto& tag : tags) {
+			if (boost::iequals(tag, test)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	GherkinSnippets GherkinDocument::getExportSnippets() const
+	{
+		GherkinSnippets result;
+		bool all = hasExportSnippets(getTags());
+		for (auto& def : scenarios) {
+			if (all || hasExportSnippets(def->getTags())) {
+				result.push_back(def->getSnippet());
+			}
+		}
+		return result;
 	}
 
 	const GherkinTags& GherkinDocument::getTags() const

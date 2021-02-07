@@ -59,10 +59,12 @@ namespace Gherkin {
 	class GherkinLine;
 	class GherkinStep;
 
+	using GherkinSnippet = std::wstring;
 	using GherkinTags = std::vector<std::string>;
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
+	using GherkinSnippets = std::vector<std::wstring>;
 
 	class AbstractProgress {
 	public:
@@ -131,6 +133,7 @@ namespace Gherkin {
 			: type(src.type), wstr(src.wstr), text(src.text), column(src.column), symbol(src.symbol) {}
 		GherkinToken(GherkinLexer& lexer, TokenType type, char ch);
 		std::string getText() const { return text; }
+		std::wstring getWstr() const { return wstr; }
 		TokenType getType() const { return type; }
 		operator JSON() const;
 	};
@@ -185,6 +188,7 @@ namespace Gherkin {
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
+		virtual GherkinSnippet getSnippet() const { return {}; }
 		virtual operator JSON() const;
 	};
 
@@ -204,6 +208,7 @@ namespace Gherkin {
 		GherkinTokens tokens;
 	public:
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
 	};
 
@@ -218,6 +223,7 @@ namespace Gherkin {
 		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual KeywordType getType() const override { return keyword.getType(); };
+		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
 	};
 
@@ -280,6 +286,7 @@ namespace Gherkin {
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
+		GherkinSnippets getExportSnippets() const;
 		const GherkinTags& getTags() const;
 		std::string dump() const;
 		operator JSON() const;
