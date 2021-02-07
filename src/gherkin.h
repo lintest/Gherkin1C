@@ -55,11 +55,14 @@ namespace Gherkin {
 	class GherkinDefinition;
 	class GherkinKeyword;
 	class GherkinToken;
+	class GherkinGroup;
 	class GherkinLine;
+	class GherkinStep;
 
 	using GherkinTags = std::vector<std::string>;
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
+	using GherkinDef = std::unique_ptr<GherkinDefinition>;
 
 	class AbstractProgress {
 	public:
@@ -181,29 +184,8 @@ namespace Gherkin {
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
+		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual operator JSON() const;
-	};
-
-	class GherkinDefinition
-		: public GherkinElement {
-	private:
-		GherkinKeyword keyword;
-		GherkinTokens tokens;
-	public:
-		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
-		virtual operator JSON() const override;
-	};
-
-	class GherkinFeature
-		: public GherkinDefinition {
-	private:
-		std::string name;
-		std::vector<std::string> description;
-		GherkinKeyword keyword;
-	public:
-		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
-		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
-		virtual operator JSON() const override;
 	};
 
 	class GherkinGroup
@@ -222,6 +204,31 @@ namespace Gherkin {
 		GherkinTokens tokens;
 	public:
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
+		virtual operator JSON() const override;
+	};
+
+	class GherkinDefinition
+		: public GherkinElement {
+	private:
+		GherkinTokens tokens;
+		std::unique_ptr<GherkinStep> examples;
+	protected:
+		GherkinKeyword keyword;
+	public:
+		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
+		virtual KeywordType getType() const override { return keyword.getType(); };
+		virtual operator JSON() const override;
+	};
+
+	class GherkinFeature
+		: public GherkinDefinition {
+	private:
+		std::string name;
+		std::vector<std::string> description;
+	public:
+		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual operator JSON() const override;
 	};
 
@@ -250,7 +257,6 @@ namespace Gherkin {
 
 	class GherkinDocument {
 	private:
-		using GherkinDef = std::unique_ptr<GherkinDefinition>;
 		std::string language;
 		GherkinDef feature;
 		GherkinDef background;
@@ -261,6 +267,7 @@ namespace Gherkin {
 		void processLine(GherkinLexer& lexer, GherkinLine& line);
 		void setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line);
 		void addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line);
+		void addScenarioExamples(GherkinLexer& lexer, GherkinLine& line);
 		void resetElementStack(GherkinLexer& lexer, GherkinElement& element);
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);

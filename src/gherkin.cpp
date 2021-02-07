@@ -319,7 +319,7 @@ namespace Gherkin {
 		case KeywordType::And: return "And";
 		case KeywordType::Background: return "Background";
 		case KeywordType::But: return "But";
-		case KeywordType::Examples: return "Then";
+		case KeywordType::Examples: return "Examples";
 		case KeywordType::Feature: return "Feature";
 		case KeywordType::Given: return "Given";
 		case KeywordType::Scenario: return "Scenario";
@@ -569,7 +569,7 @@ namespace Gherkin {
 	}
 
 	GherkinFeature::GherkinFeature(GherkinLexer& lexer, const GherkinLine& line)
-		: GherkinDefinition(lexer, line), keyword(*line.getKeyword())
+		: GherkinDefinition(lexer, line)
 	{
 		std::string text = line.getText();
 		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
@@ -589,14 +589,13 @@ namespace Gherkin {
 	GherkinFeature::operator JSON() const
 	{
 		JSON json = GherkinElement::operator JSON();
+		json["keyword"] = keyword;
 
 		if (!name.empty())
 			json["name"] = name;
 
 		if (!description.empty())
 			json["description"] = description;
-
-		json["keyword"] = keyword;
 
 		return json;
 	}
@@ -606,6 +605,20 @@ namespace Gherkin {
 	{
 	}
 
+	GherkinElement* GherkinDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
+	{
+		auto keyword = line.getKeyword();
+		if (keyword && keyword->getType() == KeywordType::Examples) {
+			if (examples)
+				throw GherkinException(lexer, "Examples duplicate error");
+
+			examples.reset(new GherkinStep(lexer, line));
+			return examples.get();
+		}
+		else
+			return GherkinElement::push(lexer, line);
+	}
+
 	GherkinDefinition::operator JSON() const
 	{
 		JSON json = GherkinElement::operator JSON();
@@ -613,7 +626,8 @@ namespace Gherkin {
 
 		if (!tokens.empty())
 			json["tokens"] = tokens;
-
+		if (examples)
+			json["examples"] = JSON(*examples);
 		return json;
 	}
 
@@ -702,7 +716,7 @@ namespace Gherkin {
 	{
 		lexer.lastElement = &element;
 		lexer.elementStack.clear();
-		lexer.elementStack.emplace_back(-1, &element);
+		lexer.elementStack.emplace_back(-2, &element);
 	}
 
 	void GherkinDocument::setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line)
@@ -730,6 +744,22 @@ namespace Gherkin {
 	{
 		scenarios.emplace_back(std::make_unique<GherkinDefinition>(lexer, line));
 		resetElementStack(lexer, *scenarios.back().get());
+	}
+
+	void GherkinDocument::addScenarioExamples(GherkinLexer& lexer, GherkinLine& line)
+	{
+		auto it = lexer.elementStack.begin();
+		if (it == lexer.elementStack.end() || it->second->getType() != KeywordType::ScenarioOutline)
+			throw GherkinException(lexer, "Parent element <Scenario outline> not found for <Examples>");
+
+		while (lexer.elementStack.size() > 1)
+			lexer.elementStack.pop_back();
+
+		auto parent = lexer.elementStack.back().second;
+		if (auto element = parent->push(lexer, line)) {
+			lexer.elementStack.emplace_back(-1, element);
+			lexer.lastElement = element;
+		}
 	}
 
 	GherkinKeyword* GherkinDocument::matchKeyword(GherkinTokens& line)
@@ -822,6 +852,9 @@ namespace Gherkin {
 			case KeywordType::Scenario:
 			case KeywordType::ScenarioOutline:
 				addScenarioDefinition(lexer, line);
+				break;
+			case KeywordType::Examples:
+				addScenarioExamples(lexer, line);
 				break;
 			default:
 				addElement(lexer, line);
