@@ -248,6 +248,7 @@ namespace Gherkin {
 		}
 
 		for (auto& doc : docs) {
+			doc->generate(snippets);
 			auto js = doc->dump(filter);
 			if (!js.empty())
 				json.push_back(js);
@@ -505,11 +506,44 @@ namespace Gherkin {
 		return json;
 	}
 
+	GeneratedScript* GeneratedScript::generate(const GherkinElement& owner, const ScenarioMap& map, const SnippetStack& stack)
+	{
+		auto snippet = owner.getSnippet();
+		if (snippet.empty())
+			return nullptr;
+		
+		auto it = map.find(snippet);
+		if (it == map.end())
+			return nullptr;
+
+		auto& ref = it->second;
+		return new GeneratedScript(ref.first, ref.second);
+	}
+
+	GeneratedScript::GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition)
+		: filename(document.filename), snippet(definition.getSnippet())
+	{
+	}
+
+	GeneratedScript::operator JSON() const
+	{
+		JSON json;
+		json["snippet"] = WC2MB(snippet);
+		json["filename"] = filename;
+		return json;
+	}
+
 	GherkinElement::GherkinElement(GherkinLexer& lexer, const GherkinLine& line)
 		: wstr(line.getWstr()), text(line.getText()), lineNumber(line.getLineNumber())
 	{
 		comments = std::move(lexer.commentStack);
 		tags = std::move(lexer.tagStack);
+	}
+
+	void GherkinElement::generate(const ScenarioMap& map, const SnippetStack &stack)
+	{
+		for (auto& it : items)
+			it->generate(map, stack);
 	}
 
 	GherkinElement* GherkinElement::push(GherkinLexer& lexer, const GherkinLine& line)
@@ -668,6 +702,12 @@ namespace Gherkin {
 	{
 	}
 
+	void GherkinStep::generate(const ScenarioMap& map, const SnippetStack& stack)
+	{
+		script.reset(GeneratedScript::generate(*this, map, stack));
+		GherkinElement::generate(map, stack);
+	}
+
 	GherkinSnippet GherkinStep::getSnippet() const
 	{
 		return snippet(tokens);
@@ -680,6 +720,9 @@ namespace Gherkin {
 
 		if (!tokens.empty())
 			json["tokens"] = tokens;
+
+		if (script)
+			json["snippet"] = JSON(*script);
 
 		return json;
 	}
@@ -979,6 +1022,15 @@ namespace Gherkin {
 				snippets.emplace(std::make_pair(snippet, ref));
 			}
 		}
+	}
+
+	void GherkinDocument::generate(const ScenarioMap& map)
+	{
+		if (background)
+			background->generate(map, {});
+
+		for (auto& def : scenarios)
+			def->generate(map, {});
 	}
 
 	const GherkinTags& GherkinDocument::getTags() const

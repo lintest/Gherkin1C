@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <set>
 #include <boost/filesystem.hpp>
 #include "json.hpp"
 
@@ -54,6 +55,7 @@ namespace Gherkin {
 	class GherkinProvider;
 	class GherkinDocument;
 	class GherkinFilter;
+	class GherkinElement;
 	class AbsractDefinition;
 	class GherkinDefinition;
 	class GherkinKeyword;
@@ -67,6 +69,9 @@ namespace Gherkin {
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
 	using GherkinDef = std::unique_ptr<AbsractDefinition>;
+	using SnippetStack = std::set<GherkinSnippet>;
+	using ScenarioRef = std::pair<const GherkinDocument&, const AbsractDefinition&>;
+	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
 
 	class AbstractProgress {
 	public:
@@ -176,6 +181,18 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
+	class GeneratedScript {
+	private:
+		GherkinTokens tokens;
+		std::vector<std::unique_ptr<GherkinElement>> items;
+	public:
+		static GeneratedScript* generate(const GherkinElement& owner, const ScenarioMap& map, const SnippetStack& stack);
+		GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition);
+		const std::string filename;
+		const GherkinSnippet snippet;
+		operator JSON() const;
+	};
+
 	class GherkinElement {
 	protected:
 		std::wstring wstr;
@@ -187,6 +204,7 @@ namespace Gherkin {
 		std::vector<GherkinTable> tables;
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
+		virtual void generate(const ScenarioMap& map, const SnippetStack &stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
@@ -209,8 +227,10 @@ namespace Gherkin {
 	private:
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
+		std::unique_ptr<GeneratedScript> script;
 	public:
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
+		virtual void generate(const ScenarioMap& map, const SnippetStack &stack) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
 	};
@@ -272,12 +292,8 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
-	using ScenarioRef = std::pair<const GherkinDocument&, const AbsractDefinition&>;
-	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
-
 	class GherkinDocument {
 	private:
-		const std::string filename;
 		std::string language;
 		GherkinDef feature;
 		GherkinDef background;
@@ -295,6 +311,7 @@ namespace Gherkin {
 	public:
 		GherkinDocument(const GherkinProvider& provider, const boost::filesystem::path& path);
 		GherkinDocument(const GherkinProvider& provider, const std::string &text);
+		const std::string filename;
 		const GherkinProvider& provider;
 		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
@@ -303,6 +320,7 @@ namespace Gherkin {
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		void getExportSnippets(ScenarioMap& snippets) const;
+		void generate(const ScenarioMap& map);
 		const GherkinTags& getTags() const;
 		JSON dump(const GherkinFilter &filter) const;
 		operator JSON() const;
