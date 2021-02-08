@@ -69,6 +69,15 @@ namespace Gherkin {
 		Unknown
 	};
 
+	class ScenarioRef {
+	private:
+		std::string filepath;
+		GherkinDocument& document;
+		GherkinDefinition& scenario;
+	};
+
+	using ScenarioMap = std::map<std::wstring, ScenarioRef>;
+
 	class GherkinFilter {
 	private:
 		std::set<std::wstring> include;
@@ -240,8 +249,8 @@ namespace Gherkin {
 				progress->Step(max, path);
 
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
+			GherkinDocument doc(*this, WC2MB(path.wstring()));
 			reflex::Input input(file.get());
-			GherkinDocument doc(*this);
 			GherkinLexer lexer(input);
 			JSON js;
 			try {
@@ -256,7 +265,6 @@ namespace Gherkin {
 				js["errors"].push_back(j);
 			}
 			if (!js.empty()) {
-				js["filepath"] = WC2MB(path.wstring());
 				json.push_back(js);
 			}
 		}
@@ -270,8 +278,8 @@ namespace Gherkin {
 	{
 		if (path.empty()) return {};
 		std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
+		GherkinDocument doc(*this, WC2MB(path));
 		reflex::Input input(file.get());
-		GherkinDocument doc(*this);
 		GherkinLexer lexer(input);
 		lexer.parse(doc);
 		return JSON(doc).dump();
@@ -1010,6 +1018,10 @@ namespace Gherkin {
 	{
 		JSON json;
 		json["language"] = language;
+
+		if (!filename.empty()) {
+			json["filename"] = filename;
+		}
 
 		if (feature)
 			json["feature"] = JSON(*feature);

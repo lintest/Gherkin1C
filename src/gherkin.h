@@ -266,6 +266,7 @@ namespace Gherkin {
 
 	class GherkinDocument {
 	private:
+		const std::string filename;
 		std::string language;
 		GherkinDef feature;
 		GherkinDef background;
@@ -281,7 +282,8 @@ namespace Gherkin {
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
-		GherkinDocument(const GherkinProvider& provider) : provider(provider) {}
+		GherkinDocument(const GherkinProvider& provider, const std::string filename = {})
+			: provider(provider), filename(filename) {}
 		const GherkinProvider& provider;
 		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
