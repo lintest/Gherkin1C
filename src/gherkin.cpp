@@ -229,6 +229,9 @@ namespace Gherkin {
 				return {};
 		}
 
+		std::vector<std::unique_ptr<GherkinDocument>> docs;
+		ScenarioMap snippets;
+
 		JSON json;
 		size_t pos = 0;
 		size_t max = files.size();
@@ -241,13 +244,15 @@ namespace Gherkin {
 
 			const auto filename = WC2MB(path.wstring());
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
-			GherkinDocument doc(*this, filename);
+			auto doc = std::make_unique<GherkinDocument>(*this, filename);
 			reflex::Input input(file.get());
 			GherkinLexer lexer(input);
 			JSON js;
 			try {
-				lexer.parse(doc);
-				js = doc.dump(filter);
+				lexer.parse(*doc);
+				js = doc->dump(filter);
+				doc->addExportSnippets(snippets);
+				docs.emplace_back(doc.release());
 			}
 			catch (const GherkinException& e) {
 				js["errors"].push_back(e);
