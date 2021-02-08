@@ -567,8 +567,23 @@ namespace Gherkin {
 		return json;
 	}
 
+	AbsractDefinition::AbsractDefinition(GherkinLexer& lexer, const GherkinLine& line)
+		: GherkinElement(lexer, line), keyword(*line.getKeyword())
+	{
+	}
+
+	GherkinElement* AbsractDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
+	{
+		return GherkinElement::push(lexer, line);
+	}
+
+	AbsractDefinition::operator JSON() const
+	{
+		return GherkinElement::operator JSON();
+	}
+
 	GherkinFeature::GherkinFeature(GherkinLexer& lexer, const GherkinLine& line)
-		: GherkinDefinition(lexer, line)
+		: AbsractDefinition(lexer, line)
 	{
 		std::string text = line.getText();
 		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
@@ -600,7 +615,7 @@ namespace Gherkin {
 	}
 
 	GherkinDefinition::GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line)
-		: GherkinElement(lexer, line), keyword(*line.getKeyword())
+		: AbsractDefinition(lexer, line)
 	{
 		switch (keyword.getType()) {
 		case KeywordType::Scenario:

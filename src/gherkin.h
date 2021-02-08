@@ -54,6 +54,7 @@ namespace Gherkin {
 	class GherkinProvider;
 	class GherkinDocument;
 	class GherkinFilter;
+	class AbsractDefinition;
 	class GherkinDefinition;
 	class GherkinKeyword;
 	class GherkinToken;
@@ -65,7 +66,7 @@ namespace Gherkin {
 	using GherkinTags = std::vector<std::string>;
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
-	using GherkinDef = std::unique_ptr<GherkinDefinition>;
+	using GherkinDef = std::unique_ptr<AbsractDefinition>;
 
 	class AbstractProgress {
 	public:
@@ -214,29 +215,37 @@ namespace Gherkin {
 		virtual operator JSON() const override;
 	};
 
-	class GherkinDefinition
+	class AbsractDefinition
 		: public GherkinElement {
-	private:
-		GherkinTokens tokens;
-		std::unique_ptr<GherkinStep> examples;
 	protected:
 		GherkinKeyword keyword;
 	public:
-		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		AbsractDefinition(GherkinLexer& lexer, const GherkinLine& line);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual KeywordType getType() const override { return keyword.getType(); };
-		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
 	};
 
 	class GherkinFeature
-		: public GherkinDefinition {
+		: public AbsractDefinition {
 	private:
 		std::string name;
 		std::vector<std::string> description;
 	public:
 		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
+		virtual operator JSON() const override;
+	};
+
+	class GherkinDefinition
+		: public AbsractDefinition {
+	private:
+		GherkinTokens tokens;
+		std::unique_ptr<GherkinStep> examples;
+	public:
+		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
+		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
 	};
 
@@ -263,7 +272,7 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
-	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
+	using ScenarioRef = std::pair<const GherkinDocument&, const AbsractDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
 
 	class GherkinDocument {
