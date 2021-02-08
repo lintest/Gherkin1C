@@ -293,7 +293,7 @@ namespace Gherkin {
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
-		void addExportSnippets(ScenarioMap& snippets) const;
+		void getExportSnippets(ScenarioMap& snippets) const;
 		const GherkinTags& getTags() const;
 		JSON dump(const GherkinFilter &filter) const;
 		operator JSON() const;

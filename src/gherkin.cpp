@@ -251,7 +251,7 @@ namespace Gherkin {
 			try {
 				lexer.parse(*doc);
 				js = doc->dump(filter);
-				doc->addExportSnippets(snippets);
+				doc->getExportSnippets(snippets);
 				docs.emplace_back(doc.release());
 			}
 			catch (const GherkinException& e) {
