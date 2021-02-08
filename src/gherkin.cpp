@@ -972,6 +972,10 @@ namespace Gherkin {
 	{
 		JSON json;
 		json["language"] = language;
+		if (!filename.empty()) {
+			json["filename"] = filename;
+		}
+
 		MatchType match = MatchType::Unknown;
 
 		if (feature) {
