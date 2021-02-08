@@ -242,52 +242,31 @@ namespace Gherkin {
 			if (progress)
 				progress->Step(max, path);
 
-			const auto filename = WC2MB(path.wstring());
-			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
-			auto doc = std::make_unique<GherkinDocument>(*this, filename);
-			reflex::Input input(file.get());
-			GherkinLexer lexer(input);
-			JSON js;
-			try {
-				lexer.parse(*doc);
-				js = doc->dump(filter);
-				doc->getExportSnippets(snippets);
-				docs.emplace_back(doc.release());
-			}
-			catch (const GherkinException& e) {
-				js["errors"].push_back(e);
-				js["filename"] = filename;
-			}
-			catch (const std::exception& e) {
-				JSON j = { {"message", e.what()} };
-				js["errors"].push_back(j);
-				js["filename"] = filename;
-			}
-			if (!js.empty()) {
-				json.push_back(js);
-			}
+			auto doc = std::make_unique<GherkinDocument>(*this, path);
+			doc->getExportSnippets(snippets);
+			docs.emplace_back(doc.release());
 		}
+
+		for (auto& doc : docs) {
+			auto js = doc->dump(filter);
+			if (!js.empty())
+				json.push_back(js);
+		}
+
 		return json.dump();
 	}
 
 	std::string GherkinProvider::ParseFile(const std::wstring& path) const
 	{
 		if (path.empty()) return {};
-		std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
-		GherkinDocument doc(*this, WC2MB(path));
-		reflex::Input input(file.get());
-		GherkinLexer lexer(input);
-		lexer.parse(doc);
+		GherkinDocument doc(*this, path);
 		return JSON(doc).dump();
 	}
 
 	std::string GherkinProvider::ParseText(const std::string& text) const
 	{
 		if (text.empty()) return {};
-		reflex::Input input(text);
-		GherkinDocument doc(*this);
-		GherkinLexer lexer(input);
-		lexer.parse(doc);
+		GherkinDocument doc(*this, text);
 		return JSON(doc).dump();
 	}
 
@@ -746,6 +725,34 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinDocument::GherkinDocument(const GherkinProvider& provider, const boost::filesystem::path& path)
+		: provider(provider), filename(WC2MB(path.wstring()))
+	{
+		try {
+			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
+			reflex::Input input(file.get());
+			GherkinLexer lexer(input);
+			lexer.parse(*this);
+		}
+		catch (const std::exception& e) {
+			errors.emplace_back(0, e.what());
+		}
+	}
+
+	GherkinDocument::GherkinDocument(const GherkinProvider& provider, const std::string& text)
+		: provider(provider)
+	{
+		if (text.empty()) return;
+		try {
+			reflex::Input input(text);
+			GherkinLexer lexer(input);
+			lexer.parse(*this);
+		}
+		catch (const std::exception& e) {
+			errors.emplace_back(0, e.what());
+		}
+	}
+
 	void GherkinDocument::setLanguage(GherkinLexer& lexer)
 	{
 		if (language.empty())
@@ -946,7 +953,7 @@ namespace Gherkin {
 		return false;
 	}
 
-	void GherkinDocument::addExportSnippets(ScenarioMap& snippets) const
+	void GherkinDocument::getExportSnippets(ScenarioMap& snippets) const
 	{
 		bool all = hasExportSnippets(getTags());
 		for (auto& def : scenarios) {
