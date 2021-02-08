@@ -184,7 +184,7 @@ namespace Gherkin {
 	class GeneratedScript {
 	private:
 		GherkinTokens tokens;
-		std::vector<std::unique_ptr<GherkinElement>> items;
+		std::vector<std::unique_ptr<GherkinElement>> steps;
 	public:
 		static GeneratedScript* generate(const GherkinElement& owner, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition);
@@ -200,9 +200,11 @@ namespace Gherkin {
 		size_t lineNumber;
 		GherkinTags tags;
 		GherkinComments comments;
-		std::vector<std::unique_ptr<GherkinElement>> items;
+		std::vector<std::unique_ptr<GherkinElement>> steps;
 		std::vector<GherkinTable> tables;
+		friend class GeneratedScript;
 	public:
+		GherkinElement(const GherkinElement& src);
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
@@ -210,6 +212,7 @@ namespace Gherkin {
 		const GherkinTags& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
+		virtual GherkinElement* copy() const;
 		virtual operator JSON() const;
 	};
 
@@ -218,7 +221,9 @@ namespace Gherkin {
 	private:
 		std::string name;
 	public:
+		GherkinGroup(const GherkinGroup& src);
 		GherkinGroup(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* copy() const override;
 		virtual operator JSON() const override;
 	};
 
@@ -229,9 +234,11 @@ namespace Gherkin {
 		GherkinTokens tokens;
 		std::unique_ptr<GeneratedScript> script;
 	public:
+		GherkinStep(const GherkinStep& src);
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack) override;
 		virtual GherkinSnippet getSnippet() const override;
+		virtual GherkinElement* copy() const override;
 		virtual operator JSON() const override;
 	};
 

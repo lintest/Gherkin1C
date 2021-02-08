@@ -523,6 +523,9 @@ namespace Gherkin {
 	GeneratedScript::GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition)
 		: filename(document.filename), snippet(definition.getSnippet())
 	{
+		for (auto& step : definition.steps) {
+			steps.emplace_back(step->copy());
+		}
 	}
 
 	GeneratedScript::operator JSON() const
@@ -530,7 +533,23 @@ namespace Gherkin {
 		JSON json;
 		json["key"] = WC2MB(snippet);
 		json["filename"] = filename;
+
+		if (!steps.empty()) {
+			JSON js;
+			for (auto& step : steps) 
+				js.push_back(*step);
+
+			json["steps"] = js;
+		}
 		return json;
+	}
+
+	GherkinElement::GherkinElement(const GherkinElement& src)
+		: wstr(src.wstr), text(src.text), lineNumber(0)
+	{
+		for (auto& step : src.steps) {
+			steps.emplace_back(step->copy());
+		}
 	}
 
 	GherkinElement::GherkinElement(GherkinLexer& lexer, const GherkinLine& line)
@@ -542,7 +561,7 @@ namespace Gherkin {
 
 	void GherkinElement::generate(const ScenarioMap& map, const SnippetStack &stack)
 	{
-		for (auto& it : items)
+		for (auto& it : steps)
 			it->generate(map, stack);
 	}
 
@@ -561,7 +580,7 @@ namespace Gherkin {
 		default:
 			return nullptr;
 		}
-		items.emplace_back(element);
+		steps.emplace_back(element);
 		return element;
 	}
 
@@ -571,23 +590,31 @@ namespace Gherkin {
 		return &tables.back();
 	}
 
+	GherkinElement* GherkinElement::copy() const
+	{
+		return new GherkinElement(*this);
+	}
+
 	GherkinElement::operator JSON() const
 	{
 		JSON json;
 
-		json["line"] = lineNumber;
-		json["text"] = text;
+		if (!text.empty())
+			json["text"] = text;
+
+		if (lineNumber)
+			json["line"] = lineNumber;
 
 		auto snippet = getSnippet();
 		if (!snippet.empty())
 			json["snippet"] = WC2MB(snippet);
 
-		if (!items.empty()) {
+		if (!steps.empty()) {
 			JSON js;
-			for (auto& item : items)
-				js.push_back(JSON(*item));
+			for (auto& step : steps)
+				js.push_back(JSON(*step));
 
-			json["items"] = js;
+			json["steps"] = js;
 		}
 
 		if (!tags.empty())
@@ -697,9 +724,19 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinStep::GherkinStep(const GherkinStep& src)
+		: GherkinElement(src), keyword(src.keyword), tokens(src.tokens)
+	{
+	}
+
 	GherkinStep::GherkinStep(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), keyword(*line.getKeyword()), tokens(line.getTokens())
 	{
+	}
+
+	GherkinElement* GherkinStep::copy() const
+	{
+		return new GherkinStep(*this);
 	}
 
 	void GherkinStep::generate(const ScenarioMap& map, const SnippetStack& stack)
@@ -727,9 +764,19 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinGroup::GherkinGroup(const GherkinGroup& src)
+		: GherkinElement(src), name(src.name)
+	{
+	}
+
 	GherkinGroup::GherkinGroup(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), name(trim(line.getText()))
 	{
+	}
+
+	GherkinElement* GherkinGroup::copy() const
+	{
+		return new GherkinGroup(*this);
 	}
 
 	GherkinGroup::operator JSON() const
