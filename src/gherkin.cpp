@@ -259,7 +259,8 @@ namespace Gherkin {
 	std::string GherkinProvider::ParseFile(const std::wstring& path) const
 	{
 		if (path.empty()) return {};
-		GherkinDocument doc(*this, path);
+		const boost::filesystem::path& file(path);
+		GherkinDocument doc(*this, file);
 		return JSON(doc).dump();
 	}
 
