@@ -239,8 +239,9 @@ namespace Gherkin {
 			if (progress)
 				progress->Step(max, path);
 
+			const auto filename = WC2MB(path.wstring());
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
-			GherkinDocument doc(*this, WC2MB(path.wstring()));
+			GherkinDocument doc(*this, filename);
 			reflex::Input input(file.get());
 			GherkinLexer lexer(input);
 			JSON js;
@@ -250,10 +251,12 @@ namespace Gherkin {
 			}
 			catch (const GherkinException& e) {
 				js["errors"].push_back(e);
+				js["filename"] = filename;
 			}
 			catch (const std::exception& e) {
 				JSON j = { {"message", e.what()} };
 				js["errors"].push_back(j);
+				js["filename"] = filename;
 			}
 			if (!js.empty()) {
 				json.push_back(js);
