@@ -265,9 +265,6 @@ namespace Gherkin {
 		return json.dump();
 	}
 
-#ifdef _WINDOWS
-#endif// _WINDOWS
-
 	std::string GherkinProvider::ParseFile(const std::wstring& path) const
 	{
 		if (path.empty()) return {};
