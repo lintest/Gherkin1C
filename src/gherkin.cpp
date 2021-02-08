@@ -69,15 +69,6 @@ namespace Gherkin {
 		Unknown
 	};
 
-	class ScenarioRef {
-	private:
-		std::string filepath;
-		GherkinDocument& document;
-		GherkinDefinition& scenario;
-	};
-
-	using ScenarioMap = std::map<std::wstring, ScenarioRef>;
-
 	class GherkinFilter {
 	private:
 		std::set<std::wstring> include;
@@ -340,7 +331,7 @@ namespace Gherkin {
 		JSON json;
 		json["text"] = text;
 		json["type"] = type2str(type);
-		if (toplevel) 
+		if (toplevel)
 			json["toplevel"] = toplevel;
 
 		return json;
@@ -471,7 +462,7 @@ namespace Gherkin {
 		json["tokens"] = js;
 		json["text"] = text;
 		json["line"] = lineNumber;
-		if (keyword) 
+		if (keyword)
 			json["keyword"] = *keyword;
 
 		return json;
@@ -950,16 +941,16 @@ namespace Gherkin {
 		return false;
 	}
 
-	GherkinSnippets GherkinDocument::getExportSnippets() const
+	void GherkinDocument::addExportSnippets(ScenarioMap& snippets) const
 	{
-		GherkinSnippets result;
 		bool all = hasExportSnippets(getTags());
 		for (auto& def : scenarios) {
 			if (all || hasExportSnippets(def->getTags())) {
-				result.push_back(def->getSnippet());
+				auto snippet = def->getSnippet();
+				auto ref = ScenarioRef(*this, *def);
+				snippets.emplace(std::make_pair(snippet, ref));
 			}
 		}
-		return result;
 	}
 
 	const GherkinTags& GherkinDocument::getTags() const

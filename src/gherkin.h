@@ -66,7 +66,6 @@ namespace Gherkin {
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
-	using GherkinSnippets = std::vector<std::wstring>;
 
 	class AbstractProgress {
 	public:
@@ -264,6 +263,9 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
+	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
+	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
+
 	class GherkinDocument {
 	private:
 		const std::string filename;
@@ -291,7 +293,7 @@ namespace Gherkin {
 		void error(GherkinLexer& lexer, const std::string& error);
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
-		GherkinSnippets getExportSnippets() const;
+		void addExportSnippets(ScenarioMap& snippets) const;
 		const GherkinTags& getTags() const;
 		JSON dump(const GherkinFilter &filter) const;
 		operator JSON() const;
