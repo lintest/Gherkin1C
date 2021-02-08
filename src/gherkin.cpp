@@ -528,7 +528,7 @@ namespace Gherkin {
 	GeneratedScript::operator JSON() const
 	{
 		JSON json;
-		json["snippet"] = WC2MB(snippet);
+		json["key"] = WC2MB(snippet);
 		json["filename"] = filename;
 		return json;
 	}
