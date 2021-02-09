@@ -142,6 +142,7 @@ namespace Gherkin {
 		GherkinToken(const GherkinToken& src)
 			: type(src.type), wstr(src.wstr), text(src.text), column(src.column), symbol(src.symbol) {}
 		GherkinToken(GherkinLexer& lexer, TokenType type, char ch);
+		GherkinToken& operator=(const GherkinToken& src);
 		std::string getText() const { return text; }
 		std::wstring getWstr() const { return wstr; }
 		TokenType getType() const { return type; }

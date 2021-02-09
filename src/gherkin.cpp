@@ -323,6 +323,16 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinToken& GherkinToken::operator=(const GherkinToken& src)
+	{
+		type = src.type;
+		wstr = src.wstr;
+		text = src.text;
+		column = src.column;
+		symbol = src.symbol;
+		return *this;
+	}
+
 	GherkinToken::GherkinToken(GherkinLexer& lexer, TokenType type, char ch)
 		: type(type), wstr(lexer.wstr()), text(lexer.text()), column(lexer.columno()), symbol(ch)
 	{
@@ -773,6 +783,15 @@ namespace Gherkin {
 	GherkinStep::GherkinStep(const GherkinStep& src, const GherkinParams& params)
 		: GherkinElement(src, params), keyword(src.keyword), tokens(src.tokens)
 	{
+		for (auto& token : tokens) {
+			if (token.getType() == TokenType::Param) {
+				auto key = lower(token.getWstr());
+				auto it = params.find(key);
+				if (it != params.end()) {
+					token = it->second;
+				}
+			}
+		}
 	}
 
 	GherkinElement* GherkinStep::copy(const GherkinParams& params) const
