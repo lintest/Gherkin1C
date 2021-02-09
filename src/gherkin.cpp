@@ -532,8 +532,8 @@ namespace Gherkin {
 		SnippetStack next = stack;
 		next.insert(snippet);
 
-		auto& ref = it->second;
-		auto result = std::make_unique<GeneratedScript>(owner, ref.first, ref.second);
+		auto& [doc, def] = it->second;
+		auto result = std::make_unique<GeneratedScript>(owner, doc, def);
 		for (auto& step : result->steps)
 			step->generate(map, next);
 
