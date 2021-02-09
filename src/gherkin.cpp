@@ -522,12 +522,22 @@ namespace Gherkin {
 		if (snippet.empty())
 			return nullptr;
 		
+		if (stack.count(snippet))
+			return nullptr;
+
 		auto it = map.find(snippet);
 		if (it == map.end())
 			return nullptr;
 
+		SnippetStack next = stack;
+		next.insert(snippet);
+
 		auto& ref = it->second;
-		return new GeneratedScript(owner, ref.first, ref.second);
+		auto result = std::make_unique<GeneratedScript>(owner, ref.first, ref.second);
+		for (auto& step : result->steps)
+			step->generate(map, next);
+
+		return result.release();
 	}
 
 	GeneratedScript::GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition)
