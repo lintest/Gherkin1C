@@ -185,6 +185,7 @@ namespace Gherkin {
 	class GeneratedScript {
 	private:
 		GherkinTokens tokens;
+		std::map<std::wstring, GherkinToken> params;
 		std::vector<std::unique_ptr<GherkinElement>> steps;
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
@@ -288,6 +289,7 @@ namespace Gherkin {
 		GherkinException(GherkinLexer& lexer, const std::string& message);
 		GherkinException(GherkinLexer& lexer, char const* const message);
 		GherkinException(const GherkinException& src);
+		GherkinException(char const* const message);
 		operator JSON() const;
 	};
 

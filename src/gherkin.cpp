@@ -542,6 +542,19 @@ namespace Gherkin {
 				break;
 			}
 		}
+		auto s = source.begin();
+		auto t = target.begin();
+		while (s != source.end() && t != target.end()) {
+			if (t->getType() == TokenType::Param) {
+				auto key = lower(t->getWstr());
+				if (params.count(key) == 0)
+					params.emplace(key, *s);
+				else
+					throw GherkinException("Duplicate param keys");
+			}
+			++s;
+			++t;
+		}
 		for (auto& step : definition.steps) {
 			steps.emplace_back(step->copy());
 		}
@@ -560,6 +573,15 @@ namespace Gherkin {
 
 			json["steps"] = js;
 		}
+
+		if (!params.empty()) {
+			JSON js;
+			for (const auto& [key, value] : params) {
+				js[WC2MB(key)] = value;
+			}
+			json["params"] = js;
+		}
+
 		return json;
 	}
 
@@ -817,6 +839,11 @@ namespace Gherkin {
 
 	GherkinException::GherkinException(const GherkinException& src)
 		: std::runtime_error(*this), line(src.line), column(src.column)
+	{
+	}
+
+	GherkinException::GherkinException(char const* const message)
+		: std::runtime_error(message), line(0), column(0)
 	{
 	}
 
