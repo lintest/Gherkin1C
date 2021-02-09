@@ -506,7 +506,7 @@ namespace Gherkin {
 		return json;
 	}
 
-	GeneratedScript* GeneratedScript::generate(const GherkinElement& owner, const ScenarioMap& map, const SnippetStack& stack)
+	GeneratedScript* GeneratedScript::generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack)
 	{
 		auto snippet = owner.getSnippet();
 		if (snippet.empty())
@@ -517,12 +517,31 @@ namespace Gherkin {
 			return nullptr;
 
 		auto& ref = it->second;
-		return new GeneratedScript(ref.first, ref.second);
+		return new GeneratedScript(owner, ref.first, ref.second);
 	}
 
-	GeneratedScript::GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition)
+	GeneratedScript::GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition)
 		: filename(document.filename), snippet(definition.getSnippet())
 	{
+		std::vector<GherkinToken> source, target;
+		for (auto& token : owner.getTokens()) {
+			switch (token.getType()) {
+			case TokenType::Param:
+			case TokenType::Number:
+			case TokenType::Date:
+				source.push_back(token);
+				break;
+			}
+		}
+		for (auto& token : definition.getTokens()) {
+			switch (token.getType()) {
+			case TokenType::Param:
+			case TokenType::Number:
+			case TokenType::Date:
+				target.push_back(token);
+				break;
+			}
+		}
 		for (auto& step : definition.steps) {
 			steps.emplace_back(step->copy());
 		}
@@ -874,7 +893,7 @@ namespace Gherkin {
 		lexer.elementStack.emplace_back(-2, &element);
 	}
 
-	void GherkinDocument::setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line)
+	void GherkinDocument::setDefinition(AbsractDef& definition, GherkinLexer& lexer, GherkinLine& line)
 	{
 		if (definition) {
 			auto keyword = line.getKeyword();

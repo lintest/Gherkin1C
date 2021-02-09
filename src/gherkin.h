@@ -68,9 +68,10 @@ namespace Gherkin {
 	using GherkinTags = std::vector<std::string>;
 	using GherkinComments = std::vector<std::string>;
 	using GherkinTokens = std::vector<GherkinToken>;
-	using GherkinDef = std::unique_ptr<AbsractDefinition>;
 	using SnippetStack = std::set<GherkinSnippet>;
-	using ScenarioRef = std::pair<const GherkinDocument&, const AbsractDefinition&>;
+	using AbsractDef = std::unique_ptr<AbsractDefinition>;
+	using GherkinDef = std::unique_ptr<GherkinDefinition>;
+	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
 
 	class AbstractProgress {
@@ -186,8 +187,8 @@ namespace Gherkin {
 		GherkinTokens tokens;
 		std::vector<std::unique_ptr<GherkinElement>> steps;
 	public:
-		static GeneratedScript* generate(const GherkinElement& owner, const ScenarioMap& map, const SnippetStack& stack);
-		GeneratedScript(const GherkinDocument& document, const AbsractDefinition& definition);
+		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
+		GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition);
 		const std::string filename;
 		const GherkinSnippet snippet;
 		operator JSON() const;
@@ -236,6 +237,7 @@ namespace Gherkin {
 	public:
 		GherkinStep(const GherkinStep& src);
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
+		const GherkinTokens& getTokens() const { return tokens; }
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual GherkinElement* copy() const override;
@@ -271,6 +273,7 @@ namespace Gherkin {
 		std::unique_ptr<GherkinStep> examples;
 	public:
 		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		const GherkinTokens& getTokens() const { return tokens; }
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
@@ -302,14 +305,14 @@ namespace Gherkin {
 	class GherkinDocument {
 	private:
 		std::string language;
-		GherkinDef feature;
-		GherkinDef background;
+		AbsractDef feature;
+		AbsractDef background;
 		std::vector<GherkinDef> scenarios;
 		std::vector<GherkinError> errors;
 	private:
 		void setLanguage(GherkinLexer& lexer);
 		void processLine(GherkinLexer& lexer, GherkinLine& line);
-		void setDefinition(GherkinDef& definition, GherkinLexer& lexer, GherkinLine& line);
+		void setDefinition(AbsractDef& definition, GherkinLexer& lexer, GherkinLine& line);
 		void addScenarioDefinition(GherkinLexer& lexer, GherkinLine& line);
 		void addScenarioExamples(GherkinLexer& lexer, GherkinLine& line);
 		void resetElementStack(GherkinLexer& lexer, GherkinElement& element);
