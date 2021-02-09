@@ -794,8 +794,12 @@ namespace Gherkin {
 	GherkinStep::GherkinStep(const GherkinStep& src, const GherkinParams& params)
 		: GherkinElement(src, params), keyword(src.keyword), tokens(src.tokens)
 	{
+		bool split = false;
+		const wchar_t splitter = L' ';
+		std::wstringstream ss;
 		for (auto& token : tokens) {
-			if (token.getType() == TokenType::Param) {
+			auto tt = token.getType();
+			if (tt == TokenType::Param) {
 				auto wstr = token.getWstr();
 				auto key = lower(wstr);
 				auto it = params.find(key);
@@ -803,6 +807,23 @@ namespace Gherkin {
 					token = it->second;
 				}
 			}
+			if (split) {
+				if (tt != TokenType::Symbol)
+					ss << splitter;
+			}
+			else 
+				split = true;
+
+			if (token.symbol)
+				ss << MB2WC(std::string(1, token.symbol));
+
+			ss << token.wstr;
+
+			if (token.symbol)
+				ss << MB2WC(std::string(1, (token.symbol == '<' ? '>' : token.symbol)));
+
+			wstr = ss.str();
+			text = WC2MB(wstr);
 		}
 	}
 
