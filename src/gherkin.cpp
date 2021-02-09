@@ -556,7 +556,7 @@ namespace Gherkin {
 			++t;
 		}
 		for (auto& step : definition.steps) {
-			steps.emplace_back(step->copy());
+			steps.emplace_back(step->copy(params));
 		}
 	}
 
@@ -585,11 +585,11 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinElement::GherkinElement(const GherkinElement& src)
+	GherkinElement::GherkinElement(const GherkinElement& src, const GherkinParams& params)
 		: wstr(src.wstr), text(src.text), lineNumber(0)
 	{
 		for (auto& step : src.steps) {
-			steps.emplace_back(step->copy());
+			steps.emplace_back(step->copy(params));
 		}
 	}
 
@@ -631,9 +631,9 @@ namespace Gherkin {
 		return &tables.back();
 	}
 
-	GherkinElement* GherkinElement::copy() const
+	GherkinElement* GherkinElement::copy(const GherkinParams& params) const
 	{
-		return new GherkinElement(*this);
+		return new GherkinElement(*this, params);
 	}
 
 	GherkinElement::operator JSON() const
@@ -765,19 +765,19 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinStep::GherkinStep(const GherkinStep& src)
-		: GherkinElement(src), keyword(src.keyword), tokens(src.tokens)
-	{
-	}
-
 	GherkinStep::GherkinStep(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), keyword(*line.getKeyword()), tokens(line.getTokens())
 	{
 	}
 
-	GherkinElement* GherkinStep::copy() const
+	GherkinStep::GherkinStep(const GherkinStep& src, const GherkinParams& params)
+		: GherkinElement(src, params), keyword(src.keyword), tokens(src.tokens)
 	{
-		return new GherkinStep(*this);
+	}
+
+	GherkinElement* GherkinStep::copy(const GherkinParams& params) const
+	{
+		return new GherkinStep(*this, params);
 	}
 
 	void GherkinStep::generate(const ScenarioMap& map, const SnippetStack& stack)
@@ -805,8 +805,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinGroup::GherkinGroup(const GherkinGroup& src)
-		: GherkinElement(src), name(src.name)
+	GherkinGroup::GherkinGroup(const GherkinGroup& src, const GherkinParams& params)
+		: GherkinElement(src, params), name(src.name)
 	{
 	}
 
@@ -815,9 +815,9 @@ namespace Gherkin {
 	{
 	}
 
-	GherkinElement* GherkinGroup::copy() const
+	GherkinElement* GherkinGroup::copy(const GherkinParams& params) const
 	{
-		return new GherkinGroup(*this);
+		return new GherkinGroup(*this, params);
 	}
 
 	GherkinGroup::operator JSON() const

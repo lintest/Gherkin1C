@@ -73,6 +73,7 @@ namespace Gherkin {
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
 	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
+	using GherkinParams = std::map<std::wstring, GherkinToken>;
 
 	class AbstractProgress {
 	public:
@@ -185,7 +186,7 @@ namespace Gherkin {
 	class GeneratedScript {
 	private:
 		GherkinTokens tokens;
-		std::map<std::wstring, GherkinToken> params;
+		GherkinParams params;
 		std::vector<std::unique_ptr<GherkinElement>> steps;
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
@@ -206,15 +207,15 @@ namespace Gherkin {
 		std::vector<GherkinTable> tables;
 		friend class GeneratedScript;
 	public:
-		GherkinElement(const GherkinElement& src);
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
+		GherkinElement(const GherkinElement& src, const GherkinParams& params);
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		const GherkinTags& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
-		virtual GherkinElement* copy() const;
+		virtual GherkinElement* copy(const GherkinParams& params) const;
 		virtual operator JSON() const;
 	};
 
@@ -223,9 +224,9 @@ namespace Gherkin {
 	private:
 		std::string name;
 	public:
-		GherkinGroup(const GherkinGroup& src);
 		GherkinGroup(GherkinLexer& lexer, const GherkinLine& line);
-		virtual GherkinElement* copy() const override;
+		GherkinGroup(const GherkinGroup& src, const GherkinParams& params);
+		virtual GherkinElement* copy(const GherkinParams& params) const override;
 		virtual operator JSON() const override;
 	};
 
@@ -236,12 +237,12 @@ namespace Gherkin {
 		GherkinTokens tokens;
 		std::unique_ptr<GeneratedScript> script;
 	public:
-		GherkinStep(const GherkinStep& src);
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
+		GherkinStep(const GherkinStep& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack) override;
 		virtual GherkinSnippet getSnippet() const override;
-		virtual GherkinElement* copy() const override;
+		virtual GherkinElement* copy(const GherkinParams& params) const override;
 		virtual operator JSON() const override;
 	};
 
