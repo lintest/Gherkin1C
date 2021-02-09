@@ -556,7 +556,8 @@ namespace Gherkin {
 		auto t = target.begin();
 		while (s != source.end() && t != target.end()) {
 			if (t->getType() == TokenType::Param) {
-				auto key = lower(t->getWstr());
+				auto wstr = t->getWstr();
+				auto key = lower(wstr);
 				if (params.count(key) == 0)
 					params.emplace(key, *s);
 				else
@@ -785,7 +786,8 @@ namespace Gherkin {
 	{
 		for (auto& token : tokens) {
 			if (token.getType() == TokenType::Param) {
-				auto key = lower(token.getWstr());
+				auto wstr = token.getWstr();
+				auto key = lower(wstr);
 				auto it = params.find(key);
 				if (it != params.end()) {
 					token = it->second;
