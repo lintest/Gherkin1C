@@ -546,7 +546,7 @@ namespace Gherkin {
 		auto snippet = owner.getSnippet();
 		if (snippet.empty())
 			return nullptr;
-		
+
 		if (stack.count(snippet))
 			return nullptr;
 
@@ -614,7 +614,7 @@ namespace Gherkin {
 
 		if (!steps.empty()) {
 			JSON js;
-			for (auto& step : steps) 
+			for (auto& step : steps)
 				js.push_back(*step);
 
 			json["steps"] = js;
@@ -646,7 +646,7 @@ namespace Gherkin {
 		tags = std::move(lexer.tagStack);
 	}
 
-	void GherkinElement::generate(const ScenarioMap& map, const SnippetStack &stack)
+	void GherkinElement::generate(const ScenarioMap& map, const SnippetStack& stack)
 	{
 		for (auto& it : steps)
 			it->generate(map, stack);
@@ -836,7 +836,7 @@ namespace Gherkin {
 				if (tt != TokenType::Symbol)
 					ss << splitter;
 			}
-			else 
+			else
 				split = true;
 
 			ss << token;
@@ -939,8 +939,11 @@ namespace Gherkin {
 	GherkinError::operator JSON() const
 	{
 		JSON json;
-		json["line"] = line;
 		json["text"] = message;
+
+		if (line)
+			json["line"] = line;
+
 		if (column)
 			json["column"] = column;
 
@@ -957,7 +960,7 @@ namespace Gherkin {
 			lexer.parse(*this);
 		}
 		catch (const std::exception& e) {
-			errors.emplace_back(0, e.what());
+			errors.emplace_back(e);
 		}
 	}
 
@@ -971,7 +974,7 @@ namespace Gherkin {
 			lexer.parse(*this);
 		}
 		catch (const std::exception& e) {
-			errors.emplace_back(0, e.what());
+			errors.emplace_back(e);
 		}
 	}
 
@@ -1189,11 +1192,16 @@ namespace Gherkin {
 
 	void GherkinDocument::generate(const ScenarioMap& map)
 	{
-		if (background)
-			background->generate(map, {});
+		try {
+			if (background)
+				background->generate(map, {});
 
-		for (auto& def : scenarios)
-			def->generate(map, {});
+			for (auto& def : scenarios)
+				def->generate(map, {});
+		}
+		catch (const std::exception& e) {
+			errors.emplace_back(e);
+		}
 	}
 
 	const GherkinTags& GherkinDocument::getTags() const
@@ -1210,44 +1218,51 @@ namespace Gherkin {
 			json["filename"] = filename;
 		}
 
-		MatchType match = MatchType::Unknown;
+		try {
+			MatchType match = MatchType::Unknown;
 
-		if (feature) {
-			match = filter.match(feature->getTags());
-			if (match == MatchType::Exclude)
-				return JSON();
+			if (feature) {
+				match = filter.match(feature->getTags());
+				if (match == MatchType::Exclude)
+					return JSON();
 
-			json["feature"] = JSON(*feature);
-		}
-
-		if (scenarios.empty()) {
-			if (match == MatchType::Unknown)
-				return JSON();
-		}
-		else {
-			for (auto& scen : scenarios) {
-				switch (filter.match(scen->getTags())) {
-				case MatchType::Exclude:
-					continue;
-				case MatchType::Include:
-					break;
-				default:
-					if (match == MatchType::Unknown)
-						continue;
-					else
-						break;
-				}
-				json["scenarios"].push_back(*scen);
+				json["feature"] = JSON(*feature);
 			}
-			if (json["scenarios"].empty())
-				return JSON();
+
+			if (scenarios.empty()) {
+				if (match == MatchType::Unknown)
+					return JSON();
+			}
+			else {
+				for (auto& scen : scenarios) {
+					switch (filter.match(scen->getTags())) {
+					case MatchType::Exclude:
+						continue;
+					case MatchType::Include:
+						break;
+					default:
+						if (match == MatchType::Unknown)
+							continue;
+						else
+							break;
+					}
+					json["scenarios"].push_back(*scen);
+				}
+				if (json["scenarios"].empty())
+					return JSON();
+			}
+
+			if (background)
+				json["background"] = JSON(*background);
+
+			if (!errors.empty())
+				json["errors"] = JSON(errors);
 		}
-
-		if (background)
-			json["background"] = JSON(*background);
-
-		if (!errors.empty())
-			json["errors"] = JSON(errors);
+		catch (const std::exception& e) {
+			json["errors"].push_back(
+				JSON({ "text" }, e.what())
+			);
+		}
 
 		return json;
 	}

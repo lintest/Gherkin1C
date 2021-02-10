@@ -304,6 +304,7 @@ namespace Gherkin {
 		size_t column = 0;
 		std::string message;
 	public:
+		GherkinError(const std::exception& e) : message(e.what()) {}
 		GherkinError(GherkinLexer& lexer, const std::string& message);
 		GherkinError(size_t line, const std::string& message);
 		operator JSON() const;
