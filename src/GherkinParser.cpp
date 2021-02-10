@@ -60,7 +60,7 @@ private:
 	HWND hWnd;
 	size_t pos = 0;
 public:
-	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring path, const std::string& filter, HWND hWnd)
+	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring &path, const std::string& filter, HWND hWnd)
 		: provider(provider), path(path), filter(filter), hWnd(hWnd) {}
 	virtual void Step(size_t max, const boost::filesystem::path& path) override {
 		JSON info;

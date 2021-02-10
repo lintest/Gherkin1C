@@ -372,7 +372,20 @@ namespace Gherkin {
 			text = trim(text);
 			wstr = MB2WC(text);
 		}
-	};
+	}
+
+	std::wstringstream& operator<<(std::wstringstream& os, const GherkinToken& token)
+	{
+		if (token.symbol)
+			os << MB2WC(std::string(1, token.symbol));
+
+		os << token.wstr;
+
+		if (token.symbol)
+			os << MB2WC(std::string(1, (token.symbol == '<' ? '>' : token.symbol)));
+
+		return os;
+	}
 
 	GherkinToken::operator JSON() const
 	{
@@ -814,17 +827,10 @@ namespace Gherkin {
 			else 
 				split = true;
 
-			if (token.symbol)
-				ss << MB2WC(std::string(1, token.symbol));
-
-			ss << token.wstr;
-
-			if (token.symbol)
-				ss << MB2WC(std::string(1, (token.symbol == '<' ? '>' : token.symbol)));
-
-			wstr = ss.str();
-			text = WC2MB(wstr);
+			ss << token;
 		}
+		wstr = ss.str();
+		text = WC2MB(wstr);
 	}
 
 	GherkinElement* GherkinStep::copy(const GherkinParams& params) const
