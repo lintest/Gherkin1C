@@ -78,7 +78,8 @@ namespace Gherkin {
 
 	class AbstractProgress {
 	public:
-		virtual void Step(size_t max, const boost::filesystem::path& path) = 0;
+		virtual void Start(size_t max, const std::string& info) = 0;
+		virtual void Step(const boost::filesystem::path& path) = 0;
 		virtual void Send(const std::string& msg) = 0;
 	};
 

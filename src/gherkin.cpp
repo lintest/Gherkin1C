@@ -229,25 +229,37 @@ namespace Gherkin {
 				return {};
 		}
 
-		std::vector<std::unique_ptr<GherkinDocument>> docs;
+		std::vector<std::pair<std::unique_ptr<GherkinDocument>, boost::filesystem::path>> docs;
 		ScenarioMap snippets;
 
 		JSON json;
 		size_t pos = 0;
 		size_t max = files.size();
+		if (progress)
+			progress->Start(max, "scan");
+
 		for (auto& path : files) {
 			if (id != identifier)
 				return json.dump();
 
 			if (progress)
-				progress->Step(max, path);
+				progress->Step(path);
 
 			auto doc = std::make_unique<GherkinDocument>(*this, path);
 			doc->getExportSnippets(snippets);
-			docs.emplace_back(doc.release());
+			docs.emplace_back(doc.release(), path);
 		}
 
-		for (auto& doc : docs) {
+		if (progress)
+			progress->Start(max, "dump");
+
+		for (auto& [doc, path] : docs) {
+			if (id != identifier)
+				return json.dump();
+
+			if (progress)
+				progress->Step(path);
+
 			doc->generate(snippets);
 			auto js = doc->dump(filter);
 			if (!js.empty())

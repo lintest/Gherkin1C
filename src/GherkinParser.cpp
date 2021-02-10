@@ -58,17 +58,25 @@ class GherkinProgress
 	: public Gherkin::AbstractProgress {
 private:
 	HWND hWnd;
+	size_t max = 0;
 	size_t pos = 0;
+	std::string step;
 public:
-	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring &path, const std::string& filter, HWND hWnd)
+	GherkinProgress(Gherkin::GherkinProvider& provider, const std::wstring& path, const std::string& filter, HWND hWnd)
 		: provider(provider), path(path), filter(filter), hWnd(hWnd) {}
-	virtual void Step(size_t max, const boost::filesystem::path& path) override {
-		JSON info;
-		info["pos"] = ++pos;
-		info["max"] = max;
-		info["path"] = WC2MB(path.wstring());
-		info["name"] = WC2MB(path.filename().wstring());
-		Send(info.dump());
+	virtual void Start(size_t max, const std::string& step) override {
+		this->pos = 0;
+		this->max = max;
+		this->step = step;
+	}
+	virtual void Step(const boost::filesystem::path& path) override {
+		Send(JSON({
+			{ "pos", ++pos},
+			{ "max", max },
+			{ "step", step },
+			{ "path", WC2MB(path.wstring()) },
+			{ "name", WC2MB(path.filename().wstring()) } }
+		).dump());
 	}
 	virtual void Send(const std::string& msg) override {
 		auto data = (LPARAM)new std::string(msg);
