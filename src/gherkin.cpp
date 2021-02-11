@@ -1219,8 +1219,7 @@ namespace Gherkin {
 		JSON json;
 		json["language"] = language;
 		if (!filepath.empty()) {
-			auto& filename = filepath.wstring();
-			json["filename"] = WC2MB(filename);
+			json["filename"] = WC2MB(filepath.wstring());
 		}
 
 		try {
@@ -1278,8 +1277,7 @@ namespace Gherkin {
 		json["language"] = language;
 
 		if (!filepath.empty()) {
-			auto& filename = filepath.wstring();
-			json["filename"] = WC2MB(filename);
+			json["filename"] = WC2MB(filepath.wstring());
 		}
 
 		if (feature)
