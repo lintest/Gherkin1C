@@ -20,19 +20,23 @@ GherkinParser::GherkinParser()
 	);
 
 	AddFunction(u"Parse", u"Прочитать",
-		[&](VH data) {  this->result = this->provider->ParseText(data); }
+		[&](VH data) { this->result = this->provider->ParseText(data); }
 	);
 
 	AddFunction(u"ParseText", u"ПрочитатьТекст",
-		[&](VH data) {  this->result = this->provider->ParseText(data); }
+		[&](VH data) { this->result = this->provider->ParseText(data); }
 	);
 
 	AddFunction(u"ParseFolder", u"ПрочитатьПапку",
-		[&](VH filepath, VH filter) {  this->result = this->provider->ParseFolder(filepath, filter); }, { {1, u""} }
+		[&](VH filepath, VH filter) { this->result = this->provider->ParseFolder(filepath, filter); }, { {1, u""} }
 	);
 
 	AddFunction(u"ParseFile", u"ПрочитатьФайл",
-		[&](VH filepath) {  this->result = this->provider->ParseFile(filepath); }
+		[&](VH filepath) { this->result = this->provider->ParseFile(filepath); }
+	);
+
+	AddProcedure(u"ClearCashe", u"ОчиститьКэш",
+		[&](VH filepath) { this->provider->ClearSnippets(); }
 	);
 
 	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы",
@@ -43,11 +47,11 @@ GherkinParser::GherkinParser()
 	CreateProgressMonitor();
 
 	AddProcedure(u"ScanFolder", u"СканироватьПапку",
-		[&](VH filepath, VH filter) {  this->ScanFolder(filepath, filter); }, { {1, u""} }
+		[&](VH filepath, VH filter) { this->ScanFolder(filepath, filter); }, { {1, u""} }
 	);
 
 	AddProcedure(u"AbortScan", u"ПрерватьСканирование",
-		[&]() {  this->AbortScan(); }
+		[&]() { this->AbortScan(); }
 	);
 #endif//_WINDOWS
 }

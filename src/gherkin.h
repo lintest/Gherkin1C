@@ -59,6 +59,7 @@ namespace Gherkin {
 	class GherkinElement;
 	class AbsractDefinition;
 	class GherkinDefinition;
+	class ExportScenario;
 	class GherkinKeyword;
 	class GherkinToken;
 	class GherkinGroup;
@@ -72,8 +73,7 @@ namespace Gherkin {
 	using SnippetStack = std::set<GherkinSnippet>;
 	using AbsractDef = std::unique_ptr<AbsractDefinition>;
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
-	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
-	using ScenarioMap = std::map<GherkinSnippet, ScenarioRef>;
+	using ScenarioMap = std::map<GherkinSnippet, std::unique_ptr<ExportScenario>>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 
 	class AbstractProgress {
@@ -113,6 +113,8 @@ namespace Gherkin {
 		std::string ParseFolder(const std::wstring& path, const std::string& filter, AbstractProgress* progress = nullptr);
 		std::string ParseFile(const std::wstring& path);
 		std::string ParseText(const std::string& text);
+		void ClearSnippets(const boost::filesystem::path& path);
+		void ClearSnippets() { snippets.clear(); };
 		void AbortScan() { ++identifier; };
 	};
 
@@ -195,7 +197,7 @@ namespace Gherkin {
 		std::vector<std::unique_ptr<GherkinElement>> steps;
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
-		GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition);
+		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
 		const std::string filename;
 		const GherkinSnippet snippet;
 		operator JSON() const;

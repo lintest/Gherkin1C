@@ -207,6 +207,21 @@ namespace Gherkin {
 		return nullptr;
 	}
 
+	void GherkinProvider::ClearSnippets(const boost::filesystem::path& path)
+	{
+		bool exists = true;
+		while (exists) {
+			exists = false;
+			for (auto it = snippets.begin(); it != snippets.end(); ++it) {
+				if (it->second->filepath == path) {
+					snippets.erase(it);
+					exists = true;
+					break;
+				}
+			}
+		}
+	}
+
   	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& tags, AbstractProgress* progress)
 	{
 		if (root.empty()) return {};
@@ -556,16 +571,16 @@ namespace Gherkin {
 		SnippetStack next = stack;
 		next.insert(snippet);
 
-		auto& [doc, def] = it->second;
-		auto result = std::make_unique<GeneratedScript>(owner, doc, def);
+		const ExportScenario& definition = *it->second;
+		auto result = std::make_unique<GeneratedScript>(owner, definition);
 		for (auto& step : result->steps)
 			step->generate(map, next);
 
 		return result.release();
 	}
 
-	GeneratedScript::GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition)
-		: filename(WC2MB(document.filepath.wstring())), snippet(definition.getSnippet())
+	GeneratedScript::GeneratedScript(const GherkinStep& owner, const ExportScenario& definition)
+		: filename(WC2MB(definition.filepath.wstring())), snippet(definition.getSnippet())
 	{
 		std::vector<GherkinToken> source, target;
 		for (auto& token : owner.getTokens()) {
@@ -795,7 +810,7 @@ namespace Gherkin {
 	}
 
 	GherkinDefinition::GherkinDefinition(const GherkinDocument& doc, const GherkinDefinition& def)
-		: AbsractDefinition(doc, def), tokens(tokens)
+		: AbsractDefinition(doc, def), tokens(def.tokens)
 	{
 	}
 
@@ -1216,12 +1231,12 @@ namespace Gherkin {
 
 	void GherkinDocument::getExportSnippets(ScenarioMap& snippets) const
 	{
+		provider.ClearSnippets(filepath);
 		bool all = hasExportSnippets(getTags());
 		for (auto& def : scenarios) {
 			if (all || hasExportSnippets(def->getTags())) {
 				auto snippet = def->getSnippet();
-				auto ref = ScenarioRef(*this, *def);
-				snippets.emplace(std::make_pair(snippet, ref));
+				snippets[snippet] = std::make_unique<ExportScenario>(*this, *def);
 			}
 		}
 	}
