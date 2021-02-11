@@ -388,7 +388,7 @@ namespace Gherkin {
 	std::wstringstream& operator<<(std::wstringstream& os, const GherkinToken& token)
 	{
 		if (token.symbol)
-			os << MB2WC(std::string(1, token.symbol));
+			os << MB2WC(std::string(1, (token.symbol == '>' ? '<' : token.symbol)));
 
 		os << token.wstr;
 
@@ -630,6 +630,21 @@ namespace Gherkin {
 		return json;
 	}
 
+	static void set_params(JSON &json, const GherkinTokens& tokens)
+	{
+		JSON params;
+		for (auto& token : tokens) {
+			switch (token.getType()) {
+			case TokenType::Param:
+			case TokenType::Number:
+			case TokenType::Date:
+				params.push_back(token);
+			}
+			if (!params.empty())
+				json["params"] = params;
+		}
+	}
+
 	GherkinElement::GherkinElement(const GherkinElement& src, const GherkinParams& params)
 		: wstr(src.wstr), text(src.text), lineNumber(0)
 	{
@@ -804,8 +819,11 @@ namespace Gherkin {
 		JSON json = AbsractDefinition::operator JSON();
 		json["keyword"] = keyword;
 
-		if (!tokens.empty())
+		if (!tokens.empty()) {
 			json["tokens"] = tokens;
+			set_params(json, tokens);
+		}
+
 		if (examples)
 			json["examples"] = JSON(*examples);
 
@@ -867,8 +885,10 @@ namespace Gherkin {
 		JSON json = GherkinElement::operator JSON();
 		json["keyword"] = keyword;
 
-		if (!tokens.empty())
+		if (!tokens.empty()) {
 			json["tokens"] = tokens;
+			set_params(json, tokens);
+		}
 
 		if (script)
 			json["snippet"] = JSON(*script);
