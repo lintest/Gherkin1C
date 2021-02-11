@@ -180,8 +180,8 @@ namespace Gherkin {
 	public:
 	private:
 		size_t lineNumber;
-		std::vector<std::string> head;
-		std::vector<std::vector<std::string>> body;
+		GherkinTokens head;
+		std::vector<GherkinTokens> body;
 	public:
 		GherkinTable(const GherkinLine& line);
 		void push(const GherkinLine& line);

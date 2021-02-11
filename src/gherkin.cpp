@@ -517,7 +517,7 @@ namespace Gherkin {
 	{
 		for (auto& token : line.getTokens()) {
 			if (token.getType() == TokenType::Cell)
-				head.emplace_back(token.getText());
+				head.push_back(token);
 		}
 	}
 
@@ -527,7 +527,7 @@ namespace Gherkin {
 		auto& row = body.back();
 		for (auto& token : line.getTokens()) {
 			if (token.getType() == TokenType::Cell)
-				row.emplace_back(token.getText());
+				row.push_back(token);
 		}
 	}
 
