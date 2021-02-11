@@ -254,9 +254,9 @@ namespace Gherkin {
 		for (auto& path : files) {
 			if (id != identifier) return;
 			if (progress) progress->Step(path);
-			auto doc = std::make_shared<GherkinDocument>(*this, path);
+			auto doc = std::make_unique<GherkinDocument>(*this, path);
 			doc->getExportSnippets(snippets);
-			params.cashe.emplace(path, doc.get());
+			params.cashe.emplace(path, doc.release());
 		}
 	}
 
