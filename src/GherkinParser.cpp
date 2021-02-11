@@ -82,7 +82,7 @@ public:
 		auto data = (LPARAM)new std::string(msg);
 		::SendMessageW(hWnd, WM_PARSING_PROGRESS, 0, data);
 	}
-	const Gherkin::GherkinProvider& provider;
+	Gherkin::GherkinProvider& provider;
 	const std::wstring path;
 	const std::string filter;
 	void Scan();

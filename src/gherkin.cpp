@@ -207,7 +207,7 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& tags, AbstractProgress* progress) const
+  	std::string GherkinProvider::ParseFolder(const std::wstring& root, const std::string& tags, AbstractProgress* progress)
 	{
 		if (root.empty()) return {};
 
@@ -230,7 +230,6 @@ namespace Gherkin {
 		}
 
 		std::vector<std::pair<std::unique_ptr<GherkinDocument>, boost::filesystem::path>> docs;
-		ScenarioMap snippets;
 
 		JSON json;
 		size_t pos = 0;
@@ -269,7 +268,7 @@ namespace Gherkin {
 		return json.dump();
 	}
 
-	std::string GherkinProvider::ParseFile(const std::wstring& path) const
+	std::string GherkinProvider::ParseFile(const std::wstring& path)
 	{
 		if (path.empty()) return {};
 		const boost::filesystem::path& file(path);
@@ -277,7 +276,7 @@ namespace Gherkin {
 		return JSON(doc).dump();
 	}
 
-	std::string GherkinProvider::ParseText(const std::string& text) const
+	std::string GherkinProvider::ParseText(const std::string& text)
 	{
 		if (text.empty()) return {};
 		GherkinDocument doc(*this, text);
@@ -566,7 +565,7 @@ namespace Gherkin {
 	}
 
 	GeneratedScript::GeneratedScript(const GherkinStep& owner, const GherkinDocument& document, const GherkinDefinition& definition)
-		: filename(document.filename), snippet(definition.getSnippet())
+		: filename(WC2MB(document.filepath.wstring())), snippet(definition.getSnippet())
 	{
 		std::vector<GherkinToken> source, target;
 		for (auto& token : owner.getTokens()) {
@@ -950,8 +949,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinDocument::GherkinDocument(const GherkinProvider& provider, const boost::filesystem::path& path)
-		: provider(provider), filename(WC2MB(path.wstring()))
+	GherkinDocument::GherkinDocument(GherkinProvider& provider, const boost::filesystem::path& path)
+		: provider(provider), filepath(path), filetime(boost::filesystem::last_write_time(path))
 	{
 		try {
 			std::unique_ptr<FILE, decltype(&fclose)> file(fileopen(path), &fclose);
@@ -964,8 +963,8 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinDocument::GherkinDocument(const GherkinProvider& provider, const std::string& text)
-		: provider(provider)
+	GherkinDocument::GherkinDocument(GherkinProvider& provider, const std::string& text)
+		: provider(provider), filetime(0)
 	{
 		if (text.empty()) return;
 		try {
@@ -1204,6 +1203,11 @@ namespace Gherkin {
 		}
 	}
 
+	bool GherkinDocument::isPrimitiveEscaping() const
+	{
+		return provider.primitiveEscaping;
+	}
+
 	const GherkinTags& GherkinDocument::getTags() const
 	{
 		static const GherkinTags empty;
@@ -1214,8 +1218,9 @@ namespace Gherkin {
 	{
 		JSON json;
 		json["language"] = language;
-		if (!filename.empty()) {
-			json["filename"] = filename;
+		if (!filepath.empty()) {
+			auto& filename = filepath.wstring();
+			json["filename"] = WC2MB(filename);
 		}
 
 		try {
@@ -1272,8 +1277,9 @@ namespace Gherkin {
 		JSON json;
 		json["language"] = language;
 
-		if (!filename.empty()) {
-			json["filename"] = filename;
+		if (!filepath.empty()) {
+			auto& filename = filepath.wstring();
+			json["filename"] = WC2MB(filename);
 		}
 
 		if (feature)

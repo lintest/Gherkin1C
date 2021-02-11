@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <filesystem>
 #include <boost/filesystem.hpp>
 #include "json.hpp"
 
@@ -104,14 +105,15 @@ namespace Gherkin {
 		Keywords keywords;
 		size_t identifier = 0;
 		GherkinParser* parser = nullptr;
+		ScenarioMap snippets;
 	public:
 		bool primitiveEscaping = false;
 		std::string getKeywords() const;
 		void setKeywords(const std::string& text);
 		GherkinKeyword* matchKeyword(const std::string& lang, GherkinTokens& line) const;
-		std::string ParseFolder(const std::wstring& path, const std::string& filter, AbstractProgress* progress = nullptr) const;
-		std::string ParseFile(const std::wstring& path) const;
-		std::string ParseText(const std::string& text) const;
+		std::string ParseFolder(const std::wstring& path, const std::string& filter, AbstractProgress* progress = nullptr);
+		std::string ParseFile(const std::wstring& path);
+		std::string ParseText(const std::string& text);
 		void AbortScan() { ++identifier; };
 	};
 
@@ -312,6 +314,7 @@ namespace Gherkin {
 
 	class GherkinDocument {
 	private:
+		GherkinProvider& provider;
 		std::string language;
 		AbsractDef feature;
 		AbsractDef background;
@@ -327,10 +330,10 @@ namespace Gherkin {
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
-		GherkinDocument(const GherkinProvider& provider, const boost::filesystem::path& path);
-		GherkinDocument(const GherkinProvider& provider, const std::string &text);
-		const std::string filename;
-		const GherkinProvider& provider;
+		GherkinDocument(GherkinProvider& provider, const boost::filesystem::path& path);
+		GherkinDocument(GherkinProvider& provider, const std::string &text);
+		const boost::filesystem::path filepath;
+		const time_t filetime;
 		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);
 		void exception(GherkinLexer& lexer, const char* message);
@@ -338,6 +341,7 @@ namespace Gherkin {
 		void error(GherkinLine& line, const std::string& error);
 		GherkinKeyword* matchKeyword(GherkinTokens& line);
 		void getExportSnippets(ScenarioMap& snippets) const;
+		bool isPrimitiveEscaping() const;
 		void generate(const ScenarioMap& map);
 		const GherkinTags& getTags() const;
 		JSON dump(const GherkinFilter &filter) const;
