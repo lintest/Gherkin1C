@@ -718,6 +718,13 @@ namespace Gherkin {
 	AbsractDefinition::AbsractDefinition(GherkinLexer& lexer, const GherkinLine& line)
 		: GherkinElement(lexer, line), keyword(*line.getKeyword())
 	{
+		std::string text = line.getText();
+		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
+		static const reflex::Pattern pattern(regex);
+		auto matcher = reflex::Matcher(pattern, text);
+		if (matcher.find() && matcher.size() < text.size()) {
+			name = trim(text.substr(matcher.size()));
+		}
 	}
 
 	GherkinElement* AbsractDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
@@ -727,19 +734,17 @@ namespace Gherkin {
 
 	AbsractDefinition::operator JSON() const
 	{
-		return GherkinElement::operator JSON();
+		JSON json = GherkinElement::operator JSON();
+
+		if (!name.empty())
+			json["name"] = name;
+
+		return json;
 	}
 
 	GherkinFeature::GherkinFeature(GherkinLexer& lexer, const GherkinLine& line)
 		: AbsractDefinition(lexer, line)
 	{
-		std::string text = line.getText();
-		static const std::string regex = reflex::Matcher::convert("[^:]+:\\s*", reflex::convert_flag::unicode);
-		static const reflex::Pattern pattern(regex);
-		auto matcher = reflex::Matcher(pattern, text);
-		if (matcher.find() && matcher.size() < text.size()) {
-			name = trim(text.substr(matcher.size()));
-		}
 	}
 
 	GherkinElement* GherkinFeature::push(GherkinLexer& lexer, const GherkinLine& line)
@@ -750,11 +755,8 @@ namespace Gherkin {
 
 	GherkinFeature::operator JSON() const
 	{
-		JSON json = GherkinElement::operator JSON();
+		JSON json = AbsractDefinition::operator JSON();
 		json["keyword"] = keyword;
-
-		if (!name.empty())
-			json["name"] = name;
 
 		if (!description.empty())
 			json["description"] = description;
@@ -799,7 +801,7 @@ namespace Gherkin {
 
 	GherkinDefinition::operator JSON() const
 	{
-		JSON json = GherkinElement::operator JSON();
+		JSON json = AbsractDefinition::operator JSON();
 		json["keyword"] = keyword;
 
 		if (!tokens.empty())

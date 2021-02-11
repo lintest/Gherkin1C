@@ -254,6 +254,7 @@ namespace Gherkin {
 	class AbsractDefinition
 		: public GherkinElement {
 	protected:
+		std::string name;
 		GherkinKeyword keyword;
 	public:
 		AbsractDefinition(GherkinLexer& lexer, const GherkinLine& line);
@@ -265,7 +266,6 @@ namespace Gherkin {
 	class GherkinFeature
 		: public AbsractDefinition {
 	private:
-		std::string name;
 		std::vector<std::string> description;
 	public:
 		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
@@ -330,7 +330,7 @@ namespace Gherkin {
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
 		GherkinDocument(GherkinProvider& provider, const boost::filesystem::path& path);
-		GherkinDocument(GherkinProvider& provider, const std::string &text);
+		GherkinDocument(GherkinProvider& provider, const std::string& text);
 		const boost::filesystem::path filepath;
 		const time_t filetime;
 		void next(GherkinLexer& lexer);
