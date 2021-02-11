@@ -258,6 +258,7 @@ namespace Gherkin {
 		GherkinKeyword keyword;
 	public:
 		AbsractDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		AbsractDefinition(const GherkinDocument& doc, const AbsractDefinition& def);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual KeywordType getType() const override { return keyword.getType(); };
 		virtual operator JSON() const override;
@@ -275,15 +276,23 @@ namespace Gherkin {
 
 	class GherkinDefinition
 		: public AbsractDefinition {
-	private:
+	protected:
 		GherkinTokens tokens;
 		std::unique_ptr<GherkinStep> examples;
 	public:
 		GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line);
+		GherkinDefinition(const GherkinDocument& doc, const GherkinDefinition& def);
 		const GherkinTokens& getTokens() const { return tokens; }
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual operator JSON() const override;
+	};
+
+	class ExportScenario
+		: public GherkinDefinition {
+	public:
+		ExportScenario(const GherkinDocument& doc, const GherkinDefinition& def);
+		const boost::filesystem::path filepath;
 	};
 
 	class GherkinException

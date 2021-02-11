@@ -742,6 +742,11 @@ namespace Gherkin {
 		}
 	}
 
+	AbsractDefinition::AbsractDefinition(const GherkinDocument& doc, const AbsractDefinition& def)
+		: GherkinElement(def, {}), name(name), keyword(keyword)
+	{
+	}
+
 	GherkinElement* AbsractDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
 		return GherkinElement::push(lexer, line);
@@ -787,6 +792,11 @@ namespace Gherkin {
 		case KeywordType::ScenarioOutline:
 			tokens = line.getTokens();
 		}
+	}
+
+	GherkinDefinition::GherkinDefinition(const GherkinDocument& doc, const GherkinDefinition& def)
+		: AbsractDefinition(doc, def), tokens(tokens)
+	{
 	}
 
 	GherkinElement* GherkinDefinition::push(GherkinLexer& lexer, const GherkinLine& line)
@@ -916,6 +926,11 @@ namespace Gherkin {
 		JSON json = GherkinElement::operator JSON();
 		json["name"] = name;
 		return json;
+	}
+
+	ExportScenario::ExportScenario(const GherkinDocument& doc, const GherkinDefinition& def)
+		: GherkinDefinition (doc, def), filepath(doc.filepath)
+	{
 	}
 
 	GherkinException::GherkinException(GherkinLexer& lexer, const std::string& message)
