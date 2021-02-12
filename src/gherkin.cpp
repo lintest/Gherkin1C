@@ -916,13 +916,7 @@ namespace Gherkin {
 
 	GherkinSnippet GherkinDefinition::getSnippet() const
 	{
-		switch (keyword.getType()) {
-		case KeywordType::Feature:
-		case KeywordType::Background:
-			return {};
-		default:
-			return snippet(tokens);
-		}
+		return snippet(tokens);
 	}
 
 	GherkinDefinition::operator JSON() const
