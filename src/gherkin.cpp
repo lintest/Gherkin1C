@@ -640,6 +640,11 @@ namespace Gherkin {
 		}
 	}
 
+	GherkinTable::GherkinTable(const GherkinTable& src)
+		: lineNumber(0), head(src.head), body(src.body)
+	{
+	}
+
 	void GherkinTable::push(const GherkinLine& line)
 	{
 		body.push_back({});

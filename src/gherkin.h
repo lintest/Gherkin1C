@@ -197,6 +197,7 @@ namespace Gherkin {
 		std::vector<GherkinTokens> body;
 	public:
 		GherkinTable(const GherkinLine& line);
+		GherkinTable(const GherkinTable& src);
 		void push(const GherkinLine& line);
 		operator JSON() const;
 	};
