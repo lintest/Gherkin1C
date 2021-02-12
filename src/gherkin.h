@@ -79,11 +79,13 @@ namespace Gherkin {
 	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ExportScenario>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
+	using BoostPath = boost::filesystem::path;
+	using BoostPaths = std::vector<BoostPath>;
 
 	class AbstractProgress {
 	public:
 		virtual void Start(const std::string& dir, size_t max, const std::string& info) = 0;
-		virtual void Step(const boost::filesystem::path& path) = 0;
+		virtual void Step(const BoostPath& path) = 0;
 		virtual void Send(const std::string& msg) = 0;
 	};
 
@@ -103,10 +105,8 @@ namespace Gherkin {
 				return words.size() > other.words.size();
 			}
 		};
-		using BoostPath = boost::filesystem::path;
-		using BoostPaths = std::vector<BoostPath>;
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
-		using FileCache = std::map<boost::filesystem::path, std::unique_ptr<GherkinDocument>>;
+		using FileCache = std::map<BoostPath, std::unique_ptr<GherkinDocument>>;
 	private:
 		class ScanParams;
 		Keywords keywords;
@@ -305,7 +305,7 @@ namespace Gherkin {
 		: public GherkinDefinition {
 	public:
 		ExportScenario(const ScenarioRef& ref);
-		const boost::filesystem::path filepath;
+		const BoostPath filepath;
 	};
 
 	class GherkinException
@@ -362,9 +362,9 @@ namespace Gherkin {
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
-		GherkinDocument(GherkinProvider& provider, const boost::filesystem::path& path);
+		GherkinDocument(GherkinProvider& provider, const BoostPath& path);
 		GherkinDocument(GherkinProvider& provider, const std::string& text);
-		const boost::filesystem::path filepath;
+		const BoostPath filepath;
 		const time_t filetime;
 		void next(GherkinLexer& lexer);
 		void push(GherkinLexer& lexer, TokenType type, char ch = 0);

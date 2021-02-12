@@ -44,7 +44,7 @@ static bool comparei(std::wstring a, std::wstring b)
 
 #endif//USE_BOOST
 
-static FILE* fileopen(const boost::filesystem::path& path)
+static FILE* fileopen(const BoostPath& path)
 {
 #ifdef _WINDOWS
 	return _wfopen(path.wstring().c_str(), L"rb");
@@ -282,13 +282,13 @@ namespace Gherkin {
 	class GherkinProvider::ScanParams {
 	public:
 		ScanParams(const std::string& filter) : filter(filter) {}
-		std::set<boost::filesystem::path> ready;
+		std::set<BoostPath> ready;
 		GherkinFilter filter;
 		FileCache cashe;
 		JSON json;
 	};
 
-	GherkinProvider::BoostPaths GherkinProvider::GetDirFiles(size_t id, const BoostPath& root) const
+	BoostPaths GherkinProvider::GetDirFiles(size_t id, const BoostPath& root) const
 	{
 		BoostPaths files;
 		const std::wstring mask = L"^.+\\.feature$";
@@ -1069,7 +1069,7 @@ namespace Gherkin {
 		return json;
 	}
 
-	GherkinDocument::GherkinDocument(GherkinProvider& provider, const boost::filesystem::path& path)
+	GherkinDocument::GherkinDocument(GherkinProvider& provider, const BoostPath& path)
 		: provider(provider), filepath(path), filetime(boost::filesystem::last_write_time(path))
 	{
 		try {
