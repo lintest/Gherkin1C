@@ -103,28 +103,24 @@ namespace Gherkin {
 			auto json = JSON::parse(text);
 
 			for (auto& tag : json["include"]) {
-				std::wstring wstr = MB2WC(tag);
-				include.emplace(lower(wstr));
+				include.emplace(lower(MB2WC(tag)));
 			}
 
 			for (auto& tag : json["exclude"]) {
-				std::wstring wstr = MB2WC(tag);
-				exclude.emplace(lower(wstr));
+				exclude.emplace(lower(MB2WC(tag)));
 			}
 		}
 		MatchType match(const StringLines& tags) const {
 			if (!exclude.empty())
 				for (auto& tag : tags) {
-					std::wstring wstr = tag.wstr;
-					if (exclude.find(lower(wstr)) != exclude.end())
+					if (exclude.find(lower(tag.wstr)) != exclude.end())
 						return MatchType::Exclude;
 				}
 			if (include.empty())
 				return MatchType::Include;
 			else {
 				for (auto& tag : tags) {
-					std::wstring wstr = tag.wstr;
-					if (include.find(lower(wstr)) != include.end())
+					if (include.find(lower(tag.wstr)) != include.end())
 						return MatchType::Include;
 				}
 				return MatchType::Unknown;
@@ -440,6 +436,11 @@ namespace Gherkin {
 		return json;
 	}
 
+	StringLine::StringLine(const GherkinLexer& lexer)
+		: wstr(lexer.wstr()), text(lexer.text()), lineNumber(lexer.lineno())
+	{
+	}
+
 	StringLine::StringLine(const GherkinLine& line)
 		: text(trim(line.getText())), wstr(MB2WC(text)), lineNumber(line.getLineNumber())
 	{
@@ -506,6 +507,17 @@ namespace Gherkin {
 		else {
 			text = trim(text);
 			wstr = MB2WC(text);
+		}
+	}
+
+	void GherkinToken::replace(const GherkinParams& params)
+	{
+		if (type == TokenType::Param) {
+			auto key = lower(getWstr());
+			auto it = params.find(key);
+			if (it != params.end()) {
+				*this = it->second;
+			}
 		}
 	}
 
@@ -590,8 +602,7 @@ namespace Gherkin {
 		std::wstringstream ss;
 		for (auto& token : tokens) {
 			if (token.getType() == TokenType::Operator) {
-				auto wstr = token.getWstr();
-				ss << lower(wstr);
+				ss << lower(token.getWstr());
 			}
 		}
 		return ss.str();
@@ -640,9 +651,21 @@ namespace Gherkin {
 		}
 	}
 
-	GherkinTable::GherkinTable(const GherkinTable& src)
-		: lineNumber(0), head(src.head), body(src.body)
+	GherkinTable::GherkinTable(const GherkinTable& src, const GherkinParams& params)
+		: lineNumber(0)
 	{
+		for (auto& token : src.head) {
+			head.emplace_back(token);
+			head.back().replace(params);
+		}
+		for (auto& src_row : src.body) {
+			body.push_back({});
+			auto& row = body.back();
+			for (auto& cell : src_row) {
+				row.emplace_back(cell);
+				row.back().replace(params);
+			}
+		}
 	}
 
 	void GherkinTable::push(const GherkinLine& line)
@@ -714,8 +737,7 @@ namespace Gherkin {
 		auto t = target.begin();
 		while (s != source.end() && t != target.end()) {
 			if (t->getType() == TokenType::Param) {
-				auto wstr = t->getWstr();
-				auto key = lower(wstr);
+				auto key = lower(t->getWstr());
 				if (params.count(key) == 0)
 					params.emplace(key, *s);
 				else
@@ -758,6 +780,9 @@ namespace Gherkin {
 	{
 		for (auto& step : src.steps) {
 			steps.emplace_back(step->copy(params));
+		}
+		for (auto& table : src.tables) {
+			tables.emplace_back(table, params);
 		}
 	}
 
@@ -916,22 +941,14 @@ namespace Gherkin {
 		const wchar_t splitter = L' ';
 		std::wstringstream ss;
 		for (auto& token : tokens) {
-			auto tt = token.getType();
-			if (tt == TokenType::Param) {
-				auto wstr = token.getWstr();
-				auto key = lower(wstr);
-				auto it = params.find(key);
-				if (it != params.end()) {
-					token = it->second;
-				}
-			}
+			token.replace(params);
 			if (split) {
-				if (tt != TokenType::Symbol)
+				if (token.getType() != TokenType::Symbol)
 					ss << splitter;
 			}
-			else
+			else {
 				split = true;
-
+			}
 			ss << token;
 		}
 		wstr = ss.str();
