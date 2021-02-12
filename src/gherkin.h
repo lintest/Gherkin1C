@@ -335,7 +335,6 @@ namespace Gherkin {
 
 	class StringLine {
 	public:
-		StringLine(const GherkinLexer& lexer);
 		StringLine(const GherkinLine& line);
 		StringLine(const StringLine& src);
 		const std::string text;
