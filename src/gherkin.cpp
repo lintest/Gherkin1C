@@ -1394,25 +1394,7 @@ namespace Gherkin {
 
 	GherkinDocument::operator JSON() const
 	{
-		JSON json;
-		json["language"] = language;
-
-		if (!filepath.empty()) {
-			json["filename"] = WC2MB(filepath.wstring());
-		}
-
-		if (feature)
-			json["feature"] = JSON(*feature);
-
-		if (background)
-			json["background"] = JSON(*background);
-
-		for (auto& scen : scenarios)
-			json["scenarios"].push_back(*scen);
-
-		if (!errors.empty())
-			json["errors"] = JSON(errors);
-
-		return json;
+		GherkinFilter filter({});
+		return dump(filter);
 	}
 }
