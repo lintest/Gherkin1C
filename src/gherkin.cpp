@@ -270,7 +270,7 @@ namespace Gherkin {
 		while (exists) {
 			exists = false;
 			for (auto it = snippets.begin(); it != snippets.end(); ++it) {
-				if (it->second->filepath == path) {
+				if (it->second.filepath == path) {
 					snippets.erase(it);
 					exists = true;
 					break;
@@ -705,7 +705,7 @@ namespace Gherkin {
 		SnippetStack next = stack;
 		next.insert(snippet);
 
-		const ExportScenario& definition = *it->second;
+		const ExportScenario& definition = it->second;
 		auto result = std::make_unique<GeneratedScript>(owner, definition);
 		for (auto& step : result->steps)
 			step->generate(map, next);
@@ -1011,8 +1011,8 @@ namespace Gherkin {
 		return json;
 	}
 
-	ExportScenario::ExportScenario(const GherkinDocument& doc, const GherkinDefinition& def)
-		: GherkinDefinition(doc, def), filepath(doc.filepath)
+	ExportScenario::ExportScenario(const ScenarioRef& ref)
+		: GherkinDefinition(ref.first, ref.second), filepath(ref.first.filepath)
 	{
 	}
 
@@ -1299,7 +1299,9 @@ namespace Gherkin {
 		for (auto& def : scenarios) {
 			if (all || hasExportSnippets(def->getTags())) {
 				auto snippet = def->getSnippet();
-				snippets[snippet] = std::make_unique<ExportScenario>(*this, *def);
+				auto it = snippets.find(snippet);
+				if (it != snippets.end()) snippets.erase(it);
+				snippets.emplace(snippet, ScenarioRef(*this, *def));
 			}
 		}
 	}

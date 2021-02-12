@@ -77,7 +77,8 @@ namespace Gherkin {
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
 	using GherkinSteps = std::vector<std::unique_ptr<GherkinElement>>;
 	using GherkinTables = std::vector<GherkinTable>;
-	using ScenarioMap = std::map<GherkinSnippet, std::unique_ptr<ExportScenario>>;
+	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
+	using ScenarioMap = std::map<GherkinSnippet, ExportScenario>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 
 	class AbstractProgress {
@@ -304,7 +305,7 @@ namespace Gherkin {
 	class ExportScenario
 		: public GherkinDefinition {
 	public:
-		ExportScenario(const GherkinDocument& doc, const GherkinDefinition& def);
+		ExportScenario(const ScenarioRef& ref);
 		const boost::filesystem::path filepath;
 	};
 
