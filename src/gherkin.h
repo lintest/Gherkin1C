@@ -63,6 +63,7 @@ namespace Gherkin {
 	class GherkinKeyword;
 	class GherkinToken;
 	class GherkinGroup;
+	class GherkinTable;
 	class GherkinLine;
 	class GherkinStep;
 
@@ -73,6 +74,8 @@ namespace Gherkin {
 	using SnippetStack = std::set<GherkinSnippet>;
 	using AbsractDef = std::unique_ptr<AbsractDefinition>;
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
+	using GherkinSteps = std::vector<std::unique_ptr<GherkinElement>>;
+	using GherkinTables = std::vector< std::unique_ptr<GherkinTable>>;
 	using ScenarioMap = std::map<GherkinSnippet, std::unique_ptr<ExportScenario>>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 
@@ -201,7 +204,7 @@ namespace Gherkin {
 	private:
 		GherkinTokens tokens;
 		GherkinParams params;
-		std::vector<std::unique_ptr<GherkinElement>> steps;
+		GherkinSteps steps;
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
@@ -217,8 +220,8 @@ namespace Gherkin {
 		size_t lineNumber;
 		GherkinTags tags;
 		GherkinComments comments;
-		std::vector<std::unique_ptr<GherkinElement>> steps;
-		std::vector<GherkinTable> tables;
+		GherkinSteps steps;
+		GherkinTables tables;
 		friend class GeneratedScript;
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
