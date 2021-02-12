@@ -280,7 +280,7 @@ namespace Gherkin {
 	class GherkinFeature
 		: public AbsractDefinition {
 	private:
-		std::vector<std::string> description;
+		StringLines description;
 	public:
 		GherkinFeature(GherkinLexer& lexer, const GherkinLine& line);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
@@ -336,6 +336,7 @@ namespace Gherkin {
 	class StringLine {
 	public:
 		StringLine(const GherkinLexer& lexer);
+		StringLine(const GherkinLine& line);
 		StringLine(const StringLine& src);
 		const std::string text;
 		const std::wstring wstr;

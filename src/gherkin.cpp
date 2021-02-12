@@ -475,6 +475,11 @@ namespace Gherkin {
 	{
 	}
 
+	StringLine::StringLine(const GherkinLine& line)
+		: text(trim(line.getText())), wstr(MB2WC(text)), lineNumber(line.getLineNumber())
+	{
+	}
+
 	StringLine::StringLine(const StringLine& src)
 		: wstr(src.wstr), text(src.text), lineNumber(src.lineNumber) 
 	{
@@ -878,7 +883,7 @@ namespace Gherkin {
 
 	GherkinElement* GherkinFeature::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
-		description.emplace_back(trim(line.getText()));
+		description.emplace_back(line);
 		return nullptr;
 	}
 
