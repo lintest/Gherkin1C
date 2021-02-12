@@ -144,7 +144,7 @@ namespace Gherkin {
 		KeywordType getType() const { return type; }
 		operator JSON() const;
 	};
- 
+
 	class GherkinToken {
 	private:
 		std::string type2str() const;
@@ -199,6 +199,8 @@ namespace Gherkin {
 	public:
 		GherkinTable(const GherkinLine& line);
 		GherkinTable(const GherkinTable& src, const GherkinParams& params);
+		bool empty() const { return head.empty() && body.empty(); }
+		GherkinTable& operator=(const GherkinTable& src);
 		void push(const GherkinLine& line);
 		operator JSON() const;
 	};
@@ -211,6 +213,7 @@ namespace Gherkin {
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
+		void replace(GherkinTables& tabs);
 		const std::string filename;
 		const GherkinSnippet snippet;
 		operator JSON() const;
@@ -229,9 +232,10 @@ namespace Gherkin {
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinElement(const GherkinElement& src, const GherkinParams& params);
-		virtual void generate(const ScenarioMap& map, const SnippetStack &stack);
+		virtual void generate(const ScenarioMap& map, const SnippetStack& stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
+		void replace(GherkinTables& tabs);
 		const StringLines& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
@@ -260,7 +264,7 @@ namespace Gherkin {
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinStep(const GherkinStep& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
-		virtual void generate(const ScenarioMap& map, const SnippetStack &stack) override;
+		virtual void generate(const ScenarioMap& map, const SnippetStack& stack) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual GherkinElement* copy(const GherkinParams& params) const override;
 		virtual operator JSON() const override;
@@ -378,7 +382,7 @@ namespace Gherkin {
 		bool isPrimitiveEscaping() const;
 		void generate(const ScenarioMap& map);
 		const StringLines& getTags() const;
-		JSON dump(const GherkinFilter &filter) const;
+		JSON dump(const GherkinFilter& filter) const;
 		operator JSON() const;
 	};
 }

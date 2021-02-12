@@ -668,6 +668,13 @@ namespace Gherkin {
 		}
 	}
 
+	GherkinTable& GherkinTable::operator=(const GherkinTable& src)
+	{
+		head = src.head;
+		body = src.body;
+		return *this;
+	}
+
 	void GherkinTable::push(const GherkinLine& line)
 	{
 		body.push_back({});
@@ -751,6 +758,13 @@ namespace Gherkin {
 		}
 	}
 
+	void GeneratedScript::replace(GherkinTables& tabs)
+	{
+		for (auto& step : steps) {
+			step->replace(tabs);
+		}
+	}
+
 	GeneratedScript::operator JSON() const
 	{
 		JSON json;
@@ -822,6 +836,18 @@ namespace Gherkin {
 	{
 		tables.push_back(line);
 		return &tables.back();
+	}
+
+	void GherkinElement::replace(GherkinTables& tabs)
+	{
+		for (auto& table : tables) {
+			if (tabs.empty()) return;
+			auto t = tabs.back();
+			if (!t.empty()) table = t;
+			tabs.pop_back();
+		}
+		for (auto& it : steps)
+			it->replace(tabs);
 	}
 
 	GherkinElement* GherkinElement::copy(const GherkinParams& params) const
@@ -964,6 +990,14 @@ namespace Gherkin {
 	{
 		script.reset(GeneratedScript::generate(*this, map, stack));
 		GherkinElement::generate(map, stack);
+		
+		if (script) {
+			GherkinTables tabs;
+			for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
+				tabs.push_back(*it);
+			}
+			script->replace(tabs);
+		}
 	}
 
 	GherkinSnippet GherkinStep::getSnippet() const
