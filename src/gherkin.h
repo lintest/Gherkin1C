@@ -76,7 +76,7 @@ namespace Gherkin {
 	using AbsractDef = std::unique_ptr<AbsractDefinition>;
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
 	using GherkinSteps = std::vector<std::unique_ptr<GherkinElement>>;
-	using GherkinTables = std::vector< std::unique_ptr<GherkinTable>>;
+	using GherkinTables = std::vector<GherkinTable>;
 	using ScenarioMap = std::map<GherkinSnippet, std::unique_ptr<ExportScenario>>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 

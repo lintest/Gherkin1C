@@ -820,9 +820,8 @@ namespace Gherkin {
 
 	GherkinTable* GherkinElement::pushTable(const GherkinLine& line)
 	{
-		auto ref = std::make_unique<GherkinTable>(line);
-		tables.emplace_back(ref.release());
-		return tables.back().get();
+		tables.push_back(line);
+		return &tables.back();
 	}
 
 	GherkinElement* GherkinElement::copy(const GherkinParams& params) const
