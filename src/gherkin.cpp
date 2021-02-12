@@ -142,7 +142,7 @@ namespace Gherkin {
 				exclude.emplace(lower(wstr));
 			}
 		}
-		MatchType match(const GherkinTags& tags) const {
+		MatchType match(const StringLines& tags) const {
 			if (!exclude.empty())
 				for (auto& tag : tags) {
 					std::wstring wstr = tag.wstr;
@@ -1281,7 +1281,7 @@ namespace Gherkin {
 		}
 	}
 
-	static bool hasExportSnippets(const GherkinTags& tags)
+	static bool hasExportSnippets(const StringLines& tags)
 	{
 		const std::string test = "ExportScenarios";
 		for (auto& tag : tags) {
@@ -1325,9 +1325,9 @@ namespace Gherkin {
 		return provider.primitiveEscaping;
 	}
 
-	const GherkinTags& GherkinDocument::getTags() const
+	const StringLines& GherkinDocument::getTags() const
 	{
-		static const GherkinTags empty;
+		static const StringLines empty;
 		return feature ? feature->getTags() : empty;
 	}
 

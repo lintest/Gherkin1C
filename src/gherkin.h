@@ -69,8 +69,7 @@ namespace Gherkin {
 	class StringLine;
 
 	using GherkinSnippet = std::wstring;
-	using GherkinTags = std::vector<StringLine>;
-	using GherkinComments = std::vector<StringLine>;
+	using StringLines = std::vector<StringLine>;
 	using GherkinTokens = std::vector<GherkinToken>;
 	using SnippetStack = std::set<GherkinSnippet>;
 	using AbsractDef = std::unique_ptr<AbsractDefinition>;
@@ -220,8 +219,8 @@ namespace Gherkin {
 		std::wstring wstr;
 		std::string text;
 		size_t lineNumber;
-		GherkinTags tags;
-		GherkinComments comments;
+		StringLines tags;
+		StringLines comments;
 		GherkinSteps steps;
 		GherkinTables tables;
 		friend class GeneratedScript;
@@ -231,7 +230,7 @@ namespace Gherkin {
 		virtual void generate(const ScenarioMap& map, const SnippetStack &stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
-		const GherkinTags& getTags() const { return tags; }
+		const StringLines& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
 		virtual GherkinElement* copy(const GherkinParams& params) const;
@@ -375,7 +374,7 @@ namespace Gherkin {
 		void getExportSnippets(ScenarioMap& snippets) const;
 		bool isPrimitiveEscaping() const;
 		void generate(const ScenarioMap& map);
-		const GherkinTags& getTags() const;
+		const StringLines& getTags() const;
 		JSON dump(const GherkinFilter &filter) const;
 		operator JSON() const;
 	};
