@@ -874,13 +874,8 @@ namespace Gherkin {
 	}
 
 	GherkinDefinition::GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line)
-		: AbsractDefinition(lexer, line)
+		: AbsractDefinition(lexer, line), tokens(line.getTokens())
 	{
-		switch (keyword.getType()) {
-		case KeywordType::Scenario:
-		case KeywordType::ScenarioOutline:
-			tokens = line.getTokens();
-		}
 	}
 
 	GherkinDefinition::GherkinDefinition(const GherkinDocument& doc, const GherkinDefinition& def)
