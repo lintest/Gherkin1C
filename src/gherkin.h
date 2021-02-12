@@ -66,10 +66,11 @@ namespace Gherkin {
 	class GherkinTable;
 	class GherkinLine;
 	class GherkinStep;
+	class StringLine;
 
 	using GherkinSnippet = std::wstring;
-	using GherkinTags = std::vector<std::string>;
-	using GherkinComments = std::vector<std::string>;
+	using GherkinTags = std::vector<StringLine>;
+	using GherkinComments = std::vector<StringLine>;
 	using GherkinTokens = std::vector<GherkinToken>;
 	using SnippetStack = std::set<GherkinSnippet>;
 	using AbsractDef = std::unique_ptr<AbsractDefinition>;
@@ -329,6 +330,16 @@ namespace Gherkin {
 		GherkinError(const std::exception& e) : message(e.what()) {}
 		GherkinError(GherkinLexer& lexer, const std::string& message);
 		GherkinError(size_t line, const std::string& message);
+		operator JSON() const;
+	};
+
+	class StringLine {
+	public:
+		StringLine(const GherkinLexer& lexer);
+		StringLine(const StringLine& src);
+		const std::string text;
+		const std::wstring wstr;
+		const size_t lineNumber;
 		operator JSON() const;
 	};
 

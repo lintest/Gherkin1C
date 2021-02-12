@@ -145,7 +145,7 @@ namespace Gherkin {
 		MatchType match(const GherkinTags& tags) const {
 			if (!exclude.empty())
 				for (auto& tag : tags) {
-					std::wstring wstr = MB2WC(tag);
+					std::wstring wstr = tag.wstr;
 					if (exclude.find(lower(wstr)) != exclude.end())
 						return MatchType::Exclude;
 				}
@@ -153,7 +153,7 @@ namespace Gherkin {
 				return MatchType::Include;
 			else {
 				for (auto& tag : tags) {
-					std::wstring wstr = MB2WC(tag);
+					std::wstring wstr = tag.wstr;
 					if (include.find(lower(wstr)) != include.end())
 						return MatchType::Include;
 				}
@@ -467,6 +467,24 @@ namespace Gherkin {
 		if (toplevel)
 			json["toplevel"] = toplevel;
 
+		return json;
+	}
+
+	StringLine::StringLine(const GherkinLexer& lexer)
+		: wstr(lexer.wstr()), text(lexer.text()), lineNumber(lexer.lineno()) 
+	{
+	}
+
+	StringLine::StringLine(const StringLine& src)
+		: wstr(src.wstr), text(src.text), lineNumber(src.lineNumber) 
+	{
+	}
+
+	StringLine::operator JSON() const
+	{
+		JSON json;
+		set(json, "text", text);
+		set(json, "line", lineNumber);
 		return json;
 	}
 
@@ -1173,10 +1191,10 @@ namespace Gherkin {
 			setLanguage(lexer);
 			break;
 		case TokenType::Comment:
-			lexer.commentStack.push_back(lexer.text());
+			lexer.commentStack.emplace_back(lexer);
 			break;
 		case TokenType::Tag:
-			lexer.tagStack.push_back(lexer.text());
+			lexer.tagStack.emplace_back(lexer);
 			break;
 		}
 	}
@@ -1274,7 +1292,7 @@ namespace Gherkin {
 	{
 		const std::string test = "ExportScenarios";
 		for (auto& tag : tags) {
-			if (boost::iequals(tag, test)) {
+			if (boost::iequals(tag.text, test)) {
 				return true;
 			}
 		}
