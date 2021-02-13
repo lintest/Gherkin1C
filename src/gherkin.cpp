@@ -61,10 +61,10 @@ namespace Gherkin {
 	void set(JSON& json, const std::string& key, const GherkinParams& value) {
 		if (!value.empty()) {
 			JSON js;
-			for (const auto& [key, value] : value)
-				js[WC2MB(key)] = value;
+			for (const auto& [id, value] : value)
+				js.push_back(JSON({ {"key", WC2MB(id)}, {"value", value } }));
 
-			json["params"] = js;
+			json[key] = js;
 		}
 	}
 
@@ -447,7 +447,7 @@ namespace Gherkin {
 	}
 
 	StringLine::StringLine(const StringLine& src)
-		: wstr(src.wstr), text(src.text), lineNumber(src.lineNumber) 
+		: wstr(src.wstr), text(src.text), lineNumber(src.lineNumber)
 	{
 	}
 
@@ -893,7 +893,7 @@ namespace Gherkin {
 	AbsractDefinition::operator JSON() const
 	{
 		JSON json = GherkinElement::operator JSON();
-		set(json, "name",  name);
+		set(json, "name", name);
 		return json;
 	}
 
@@ -990,7 +990,7 @@ namespace Gherkin {
 	{
 		script.reset(GeneratedScript::generate(*this, map, stack));
 		GherkinElement::generate(map, stack);
-		
+
 		if (script) {
 			GherkinTables tabs;
 			for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
