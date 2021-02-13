@@ -218,6 +218,7 @@ namespace Gherkin {
 		GherkinMultiline(const GherkinLine& line);
 		GherkinMultiline(const GherkinMultiline& src);
 		GherkinMultiline& operator=(const GherkinMultiline& src);
+		bool empty() const { return lines.empty(); }
 		void push(const GherkinLine& line);
 		void close(const GherkinLine& line);
 		operator JSON() const;

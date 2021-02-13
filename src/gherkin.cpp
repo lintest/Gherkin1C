@@ -860,6 +860,9 @@ namespace Gherkin {
 		for (auto& table : src.tables) {
 			tables.emplace_back(table, params);
 		}
+		for (auto& lines : src.multilines) {
+			multilines.emplace_back(lines);
+		}
 	}
 
 	GherkinElement::GherkinElement(GherkinLexer& lexer, const GherkinLine& line)
@@ -910,9 +913,15 @@ namespace Gherkin {
 	{
 		for (auto& table : tables) {
 			if (tabs.empty()) return;
-			auto t = tabs.back();
+			auto& t = tabs.back();
 			if (!t.empty()) table = t;
 			tabs.pop_back();
+		}
+		for (auto& line : multilines) {
+			if (mlns.empty()) return;
+			auto& m = mlns.back();
+			if (!m.empty()) line = m;
+			mlns.pop_back();
 		}
 		for (auto& it : steps)
 			it->replace(tabs, mlns);
