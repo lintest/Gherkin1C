@@ -694,6 +694,39 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinMultiline::GherkinMultiline(const GherkinLine& line)
+		: lineNumber(line.getLineNumber())
+	{
+		lines.emplace_back(line);
+	}
+
+	GherkinMultiline::GherkinMultiline(const GherkinMultiline& src)
+		: lineNumber(0), lines(src.lines)
+	{
+	}
+
+	GherkinMultiline& GherkinMultiline::operator=(const GherkinMultiline& src)
+	{   
+		if (std::addressof(*this) == std::addressof(src))
+			throw "Assign object to himself";
+
+		lines.clear();
+		for (auto& line : src.lines) {
+			lines.push_back(line);
+		}
+		return *this;
+	}
+
+	void GherkinMultiline::push(const GherkinLine& line)
+	{
+		lines.emplace_back(line);
+	}
+
+	GherkinMultiline::operator JSON() const
+	{
+		return JSON(lines);
+	}
+
 	GeneratedScript* GeneratedScript::generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack)
 	{
 		auto snippet = owner.getSnippet();
@@ -836,6 +869,12 @@ namespace Gherkin {
 	{
 		tables.push_back(line);
 		return &tables.back();
+	}
+
+	GherkinMultiline* GherkinElement::pushMultiline(const GherkinLine& line)
+	{
+		multilines.push_back(line);
+		return &multilines.back();
 	}
 
 	void GherkinElement::replace(GherkinTables& tabs)
@@ -1246,6 +1285,20 @@ namespace Gherkin {
 		}
 	}
 
+	void GherkinDocument::addMultiline(GherkinLexer& lexer, GherkinLine& line)
+	{
+		if (lexer.lastElement) {
+			if (lexer.currentMultiline)
+				lexer.currentMultiline->push(line);
+			else {
+				lexer.currentMultiline = lexer.lastElement->pushMultiline(line);
+			}
+		}
+		else {
+			//TODO: save error to error list
+		}
+	}
+
 	void GherkinDocument::addElement(GherkinLexer& lexer, GherkinLine& line)
 	{
 		auto indent = line.getIndent();
@@ -1265,11 +1318,15 @@ namespace Gherkin {
 
 	void GherkinDocument::processLine(GherkinLexer& lexer, GherkinLine& line)
 	{
-		if (line.getType() != TokenType::Table)
+		auto type = line.getType();
+
+		if (type != TokenType::Table)
 			lexer.currentTable = nullptr;
 
-		auto keyword = line.matchKeyword(*this);
-		if (keyword) {
+		if (type != TokenType::Multiline)
+			lexer.currentMultiline = nullptr;
+
+		if (auto keyword = line.matchKeyword(*this)) {
 			switch (keyword->getType()) {
 			case KeywordType::Feature:
 				setDefinition(feature, lexer, line);
@@ -1289,7 +1346,7 @@ namespace Gherkin {
 			}
 		}
 		else {
-			switch (line.getType()) {
+			switch (type) {
 			case TokenType::Asterisk:
 			case TokenType::Operator:
 			case TokenType::Symbol:
@@ -1299,7 +1356,7 @@ namespace Gherkin {
 				addTableLine(lexer, line);
 				break;
 			case TokenType::Multiline:
-				//TODO: add multy line
+				addMultiline(lexer, line);
 				break;
 			}
 		}

@@ -59,6 +59,7 @@ namespace Gherkin {
 	class GherkinElement;
 	class AbsractDefinition;
 	class GherkinDefinition;
+	class GherkinMultiline;
 	class ExportScenario;
 	class GherkinKeyword;
 	class GherkinToken;
@@ -76,6 +77,7 @@ namespace Gherkin {
 	using GherkinDef = std::unique_ptr<GherkinDefinition>;
 	using GherkinSteps = std::vector<std::unique_ptr<GherkinElement>>;
 	using GherkinTables = std::vector<GherkinTable>;
+	using GherkinMultilines = std::vector<GherkinMultiline>;
 	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ExportScenario>;
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
@@ -191,7 +193,6 @@ namespace Gherkin {
 	};
 
 	class GherkinTable {
-	public:
 	private:
 		size_t lineNumber;
 		GherkinTokens head;
@@ -201,6 +202,18 @@ namespace Gherkin {
 		GherkinTable(const GherkinTable& src, const GherkinParams& params);
 		bool empty() const { return head.empty() && body.empty(); }
 		GherkinTable& operator=(const GherkinTable& src);
+		void push(const GherkinLine& line);
+		operator JSON() const;
+	};
+
+	class GherkinMultiline {
+	private:
+		size_t lineNumber;
+		StringLines lines;
+	public:
+		GherkinMultiline(const GherkinLine& line);
+		GherkinMultiline(const GherkinMultiline& src);
+		GherkinMultiline& operator=(const GherkinMultiline& src);
 		void push(const GherkinLine& line);
 		operator JSON() const;
 	};
@@ -228,6 +241,7 @@ namespace Gherkin {
 		StringLines comments;
 		GherkinSteps steps;
 		GherkinTables tables;
+		GherkinMultilines multilines;
 		friend class GeneratedScript;
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
@@ -235,6 +249,7 @@ namespace Gherkin {
 		virtual void generate(const ScenarioMap& map, const SnippetStack& stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
+		GherkinMultiline* pushMultiline(const GherkinLine& line);
 		virtual void replace(GherkinTables& tabs);
 		const StringLines& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
@@ -367,6 +382,7 @@ namespace Gherkin {
 		void addScenarioExamples(GherkinLexer& lexer, GherkinLine& line);
 		void resetElementStack(GherkinLexer& lexer, GherkinElement& element);
 		void addTableLine(GherkinLexer& lexer, GherkinLine& line);
+		void addMultiline(GherkinLexer& lexer, GherkinLine& line);
 		void addElement(GherkinLexer& lexer, GherkinLine& line);
 	public:
 		GherkinDocument(GherkinProvider& provider, const BoostPath& path);
