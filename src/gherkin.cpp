@@ -1000,7 +1000,8 @@ namespace Gherkin {
 		script.reset(GeneratedScript::generate(*this, map, stack));
 		GherkinElement::generate(map, stack);
 		if (script) {
-			script->replace(reverse(tables));
+			auto tabs = reverse(tables);
+			script->replace(tabs);
 		}
 	}
 
@@ -1008,7 +1009,8 @@ namespace Gherkin {
 	{
 		GherkinElement::replace(tabs);
 		if (script) {
-			script->replace(reverse(tables));
+			auto tabs = reverse(tables);
+			script->replace(tabs);
 		}
 	}
 
