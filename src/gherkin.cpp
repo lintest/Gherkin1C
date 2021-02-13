@@ -986,17 +986,29 @@ namespace Gherkin {
 		return new GherkinStep(*this, params);
 	}
 
+	static GherkinTables reverse(const GherkinTables& src)
+	{
+		GherkinTables tabs;
+		for (auto it = src.rbegin(); it != src.rend(); ++it) {
+			tabs.push_back(*it);
+		}
+		return tabs;
+	}
+
 	void GherkinStep::generate(const ScenarioMap& map, const SnippetStack& stack)
 	{
 		script.reset(GeneratedScript::generate(*this, map, stack));
 		GherkinElement::generate(map, stack);
-
 		if (script) {
-			GherkinTables tabs;
-			for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
-				tabs.push_back(*it);
-			}
-			script->replace(tabs);
+			script->replace(reverse(tables));
+		}
+	}
+
+	void GherkinStep::replace(GherkinTables& tabs)
+	{
+		GherkinElement::replace(tabs);
+		if (script) {
+			script->replace(reverse(tables));
 		}
 	}
 

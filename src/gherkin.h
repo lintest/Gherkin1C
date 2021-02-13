@@ -235,7 +235,7 @@ namespace Gherkin {
 		virtual void generate(const ScenarioMap& map, const SnippetStack& stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
-		void replace(GherkinTables& tabs);
+		virtual void replace(GherkinTables& tabs);
 		const StringLines& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
@@ -265,6 +265,7 @@ namespace Gherkin {
 		GherkinStep(const GherkinStep& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
 		virtual void generate(const ScenarioMap& map, const SnippetStack& stack) override;
+		virtual void replace(GherkinTables& tabs) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual GherkinElement* copy(const GherkinParams& params) const override;
 		virtual operator JSON() const override;
