@@ -451,6 +451,11 @@ namespace Gherkin {
 	{
 	}
 
+	StringLine::StringLine(size_t lineNumber)
+		: lineNumber(lineNumber)
+	{
+	}
+
 	StringLine::operator JSON() const
 	{
 		JSON json;
@@ -696,17 +701,24 @@ namespace Gherkin {
 
 	GherkinMultiline::GherkinMultiline(const GherkinLine& line)
 		: lineNumber(line.getLineNumber())
+		, lastNumber(line.getLineNumber())
+		, endNumber(0)
+		, header(trim(line.getText()))
 	{
-		lines.emplace_back(line);
 	}
 
-	GherkinMultiline::GherkinMultiline(const GherkinMultiline& src)
-		: lineNumber(0), lines(src.lines)
+	GherkinMultiline::GherkinMultiline(const GherkinMultiline& src, const GherkinParams& params)
+		: lineNumber(src.lineNumber)
+		, lastNumber(src.lastNumber)
+		, endNumber(src.endNumber)
+		, header(src.header)
+		, footer(src.footer)
+		, lines(src.lines)
 	{
 	}
 
 	GherkinMultiline& GherkinMultiline::operator=(const GherkinMultiline& src)
-	{   
+	{
 		if (std::addressof(*this) == std::addressof(src))
 			throw "Assign object to himself";
 
@@ -719,12 +731,29 @@ namespace Gherkin {
 
 	void GherkinMultiline::push(const GherkinLine& line)
 	{
+		while (line.getLineNumber() > lastNumber + 1) {
+			lines.emplace_back(++lastNumber);
+		}
+		lastNumber = line.getLineNumber();
 		lines.emplace_back(line);
+	}
+
+	void GherkinMultiline::close(const GherkinLine& line)
+	{
+		while (line.getLineNumber() > lastNumber + 1) {
+			lines.emplace_back(++lastNumber);
+		}
+		endNumber = line.getLineNumber();
+		footer = trim(line.getText());
 	}
 
 	GherkinMultiline::operator JSON() const
 	{
-		return JSON(lines);
+		JSON json;
+		json["header"] = { {"line", lineNumber}, {"text", header} };
+		json["footer"] = { {"line", endNumber}, {"text", footer} };
+		set(json, "lines", lines);
+		return json;
 	}
 
 	GeneratedScript* GeneratedScript::generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack)
@@ -867,13 +896,13 @@ namespace Gherkin {
 
 	GherkinTable* GherkinElement::pushTable(const GherkinLine& line)
 	{
-		tables.push_back(line);
+		tables.emplace_back(line);
 		return &tables.back();
 	}
 
 	GherkinMultiline* GherkinElement::pushMultiline(const GherkinLine& line)
 	{
-		multilines.push_back(line);
+		multilines.emplace_back(line);
 		return &multilines.back();
 	}
 
@@ -902,8 +931,9 @@ namespace Gherkin {
 		set(json, "snippet", getSnippet());
 		set(json, "steps", steps);
 		set(json, "tables", tables);
-		set(json, "tags", tags);
+		set(json, "multilines", multilines);
 		set(json, "comments", comments);
+		set(json, "tags", tags);
 		return json;
 	}
 
@@ -1287,16 +1317,25 @@ namespace Gherkin {
 
 	void GherkinDocument::addMultiline(GherkinLexer& lexer, GherkinLine& line)
 	{
+		auto type = line.getType();
 		if (lexer.lastElement) {
-			if (lexer.currentMultiline)
-				lexer.currentMultiline->push(line);
-			else {
+			if (lexer.currentMultiline) {
+				switch (type) {
+				case TokenType::Line:
+					lexer.currentMultiline->push(line);
+					return;
+				case TokenType::Multiline:
+					lexer.currentMultiline->close(line);
+					lexer.currentMultiline = nullptr;
+					return;
+				}
+			}
+			else if (type == TokenType::Multiline) {
 				lexer.currentMultiline = lexer.lastElement->pushMultiline(line);
+				return;
 			}
 		}
-		else {
-			//TODO: save error to error list
-		}
+		//TODO: save error to error list
 	}
 
 	void GherkinDocument::addElement(GherkinLexer& lexer, GherkinLine& line)
@@ -1319,12 +1358,8 @@ namespace Gherkin {
 	void GherkinDocument::processLine(GherkinLexer& lexer, GherkinLine& line)
 	{
 		auto type = line.getType();
-
 		if (type != TokenType::Table)
 			lexer.currentTable = nullptr;
-
-		if (type != TokenType::Multiline)
-			lexer.currentMultiline = nullptr;
 
 		if (auto keyword = line.matchKeyword(*this)) {
 			switch (keyword->getType()) {
@@ -1355,6 +1390,7 @@ namespace Gherkin {
 			case TokenType::Table:
 				addTableLine(lexer, line);
 				break;
+			case TokenType::Line:
 			case TokenType::Multiline:
 				addMultiline(lexer, line);
 				break;

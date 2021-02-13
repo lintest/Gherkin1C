@@ -209,12 +209,17 @@ namespace Gherkin {
 	class GherkinMultiline {
 	private:
 		size_t lineNumber;
+		size_t lastNumber;
+		size_t endNumber;
+		std::string header;
+		std::string footer;
 		StringLines lines;
 	public:
 		GherkinMultiline(const GherkinLine& line);
-		GherkinMultiline(const GherkinMultiline& src);
+		GherkinMultiline(const GherkinMultiline& src, const GherkinParams& params);
 		GherkinMultiline& operator=(const GherkinMultiline& src);
 		void push(const GherkinLine& line);
+		void close(const GherkinLine& line);
 		operator JSON() const;
 	};
 
@@ -360,6 +365,7 @@ namespace Gherkin {
 		StringLine(const GherkinLexer& lexer);
 		StringLine(const GherkinLine& line);
 		StringLine(const StringLine& src);
+		StringLine(size_t lineNumber);
 		const std::string text;
 		const std::wstring wstr;
 		const size_t lineNumber;
