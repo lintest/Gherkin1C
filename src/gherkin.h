@@ -216,7 +216,7 @@ namespace Gherkin {
 		StringLines lines;
 	public:
 		GherkinMultiline(const GherkinLine& line);
-		GherkinMultiline(const GherkinMultiline& src, const GherkinParams& params);
+		GherkinMultiline(const GherkinMultiline& src);
 		GherkinMultiline& operator=(const GherkinMultiline& src);
 		void push(const GherkinLine& line);
 		void close(const GherkinLine& line);
@@ -231,7 +231,7 @@ namespace Gherkin {
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
-		void replace(GherkinTables& tabs);
+		void replace(GherkinTables& tabs, GherkinMultilines& mlns);
 		const std::string filename;
 		const GherkinSnippet snippet;
 		operator JSON() const;
@@ -255,7 +255,7 @@ namespace Gherkin {
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		GherkinMultiline* pushMultiline(const GherkinLine& line);
-		virtual void replace(GherkinTables& tabs);
+		virtual void replace(GherkinTables& tabs, GherkinMultilines& mlns);
 		const StringLines& getTags() const { return tags; }
 		virtual KeywordType getType() const { return KeywordType::None; }
 		virtual GherkinSnippet getSnippet() const { return {}; }
@@ -285,7 +285,7 @@ namespace Gherkin {
 		GherkinStep(const GherkinStep& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
 		virtual void generate(const ScenarioMap& map, const SnippetStack& stack) override;
-		virtual void replace(GherkinTables& tabs) override;
+		virtual void replace(GherkinTables& tabs, GherkinMultilines& mlns) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual GherkinElement* copy(const GherkinParams& params) const override;
 		virtual operator JSON() const override;

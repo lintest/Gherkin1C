@@ -707,7 +707,7 @@ namespace Gherkin {
 	{
 	}
 
-	GherkinMultiline::GherkinMultiline(const GherkinMultiline& src, const GherkinParams& params)
+	GherkinMultiline::GherkinMultiline(const GherkinMultiline& src)
 		: lineNumber(src.lineNumber)
 		, lastNumber(src.lastNumber)
 		, endNumber(src.endNumber)
@@ -820,10 +820,10 @@ namespace Gherkin {
 		}
 	}
 
-	void GeneratedScript::replace(GherkinTables& tabs)
+	void GeneratedScript::replace(GherkinTables& tabs, GherkinMultilines& mlns)
 	{
 		for (auto& step : steps) {
-			step->replace(tabs);
+			step->replace(tabs, mlns);
 		}
 	}
 
@@ -906,7 +906,7 @@ namespace Gherkin {
 		return &multilines.back();
 	}
 
-	void GherkinElement::replace(GherkinTables& tabs)
+	void GherkinElement::replace(GherkinTables& tabs, GherkinMultilines& mlns)
 	{
 		for (auto& table : tables) {
 			if (tabs.empty()) return;
@@ -915,7 +915,7 @@ namespace Gherkin {
 			tabs.pop_back();
 		}
 		for (auto& it : steps)
-			it->replace(tabs);
+			it->replace(tabs, mlns);
 	}
 
 	GherkinElement* GherkinElement::copy(const GherkinParams& params) const
@@ -1055,9 +1055,10 @@ namespace Gherkin {
 		return new GherkinStep(*this, params);
 	}
 
-	static GherkinTables reverse(const GherkinTables& src)
+	template<typename T>
+	static std::vector<T> reverse(const std::vector<T>& src)
 	{
-		GherkinTables tabs;
+		std::vector<T> tabs;
 		for (auto it = src.rbegin(); it != src.rend(); ++it) {
 			tabs.push_back(*it);
 		}
@@ -1070,16 +1071,18 @@ namespace Gherkin {
 		GherkinElement::generate(map, stack);
 		if (script) {
 			auto tabs = reverse(tables);
-			script->replace(tabs);
+			auto mlns = reverse(multilines);
+			script->replace(tabs, mlns);
 		}
 	}
 
-	void GherkinStep::replace(GherkinTables& tabs)
+	void GherkinStep::replace(GherkinTables& tabs, GherkinMultilines& mlns)
 	{
-		GherkinElement::replace(tabs);
+		GherkinElement::replace(tabs, mlns);
 		if (script) {
 			auto tabs = reverse(tables);
-			script->replace(tabs);
+			auto mlns = reverse(multilines);
+			script->replace(tabs, mlns);
 		}
 	}
 
