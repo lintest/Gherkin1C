@@ -6,7 +6,6 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <filesystem>
 #include <boost/filesystem.hpp>
 #include "json.hpp"
 
@@ -84,8 +83,7 @@ namespace Gherkin {
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 	using BoostPath = boost::filesystem::path;
 	using BoostPaths = std::vector<BoostPath>;
-	using FileTime = std::filesystem::file_time_type;
-	using FileInfo = std::pair<FileTime, size_t>;
+	using FileInfo = std::pair<size_t, time_t>;
 	using FileCache = std::map<BoostPath, FileInfo>;
 
 	class AbstractProgress {
@@ -113,7 +111,6 @@ namespace Gherkin {
 			}
 		};
 		using Keywords = std::map<std::string, std::vector<Keyword>>;
-		using FileCache = std::map<BoostPath, std::unique_ptr<GherkinDocument>>;
 	private:
 		class ScanParams;
 		Keywords keywords;
@@ -134,6 +131,7 @@ namespace Gherkin {
 		std::string ParseText(const std::string& text);
 		void ClearSnippets(const BoostPath& path);
 		void AbortScan() { ++identifier; };
+		std::string GetCashe() const;
 	};
 
 	class GherkinKeyword {
