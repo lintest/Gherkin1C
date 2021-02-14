@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <filesystem>
 #include <boost/filesystem.hpp>
 #include "json.hpp"
 
@@ -83,6 +84,9 @@ namespace Gherkin {
 	using GherkinParams = std::map<std::wstring, GherkinToken>;
 	using BoostPath = boost::filesystem::path;
 	using BoostPaths = std::vector<BoostPath>;
+	using FileTime = std::filesystem::file_time_type;
+	using FileInfo = std::pair<FileTime, size_t>;
+	using FileCache = std::map<BoostPath, FileInfo>;
 
 	class AbstractProgress {
 	public:
@@ -102,7 +106,7 @@ namespace Gherkin {
 			friend class GherkinProvider;
 			friend class GherkinKeyword;
 		public:
-			Keyword(KeywordType type, const std::string name, const std::string& text);
+			Keyword(KeywordType type, const std::string &name, const std::string& text);
 			GherkinKeyword* match(GherkinTokens& tokens) const;
 			bool comp(const Keyword& other) const {
 				return words.size() > other.words.size();
@@ -116,6 +120,7 @@ namespace Gherkin {
 		size_t identifier = 0;
 		GherkinParser* parser = nullptr;
 		ScenarioMap snippets;
+		FileCache fileCache;
 		BoostPaths GetDirFiles(size_t id, const BoostPath& root) const;
 		void ScanFolder(size_t id, AbstractProgress* progress, const BoostPath& root, ScanParams& params);
 		void DumpFolder(size_t id, AbstractProgress* progress, const BoostPath& root, ScanParams& params);
@@ -128,7 +133,6 @@ namespace Gherkin {
 		std::string ParseFile(const std::wstring& path, const std::string& libs, AbstractProgress* progress = nullptr);
 		std::string ParseText(const std::string& text);
 		void ClearSnippets(const BoostPath& path);
-		void ClearSnippets() { snippets.clear(); };
 		void AbortScan() { ++identifier; };
 	};
 

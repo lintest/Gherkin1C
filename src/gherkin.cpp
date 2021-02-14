@@ -135,7 +135,7 @@ namespace Gherkin {
 		}
 	};
 
-	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string name, const std::string& text)
+	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string &name, const std::string& text)
 		:type(type), name(name), text(text)
 	{
 		static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
@@ -227,9 +227,14 @@ namespace Gherkin {
 	void GherkinProvider::ClearSnippets(const BoostPath& path)
 	{
 		if (path.empty()) {
+			fileCache.clear();
 			snippets.clear();
 			return;
 		}
+
+		auto it = fileCache.find(path);
+		if (it != fileCache.end())
+			fileCache.erase(it);
 
 		bool exists = true;
 		while (exists) {
