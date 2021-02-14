@@ -50,6 +50,17 @@ namespace Gherkin {
 		}
 	}
 
+	void set(JSON& json, const std::string& key, const ScenarioMap& value) {
+		if (!value.empty()) {
+			JSON js;
+			for (auto& [k, v] : value) {
+				auto filename = WC2MB(v.filepath.wstring());
+				js.push_back({ {"filename", filename }, { "snippet", v } });
+			}
+			json[key] = js;
+		}
+	}
+
 	void set(JSON& json, const std::string& key, const std::string& value) {
 		if (!value.empty())
 			json[key] = value;
@@ -265,11 +276,7 @@ namespace Gherkin {
 	{
 		JSON json;
 		set(json, "files", fileCache);
-		for (auto& [key, value] : snippets) {
-			auto filename = WC2MB(value.filepath.wstring());
-			JSON js = { {"filename", filename }, { "snippet", value } };
-			json["snippets"].push_back(js);
-		}
+		set(json, "snippets", snippets);
 		return json.dump();
 	}
 
