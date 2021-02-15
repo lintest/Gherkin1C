@@ -728,6 +728,7 @@ namespace Gherkin {
 		set(json, "line", lineNumber);
 		set(json, "text", text);
 		set(json, "tokens", tokens);
+		set(json, "script", script);
 		return json;
 	}
 
@@ -1192,7 +1193,13 @@ namespace Gherkin {
 		JSON json = AbsractDefinition::operator JSON();
 		json["keyword"] = keyword;
 		set(json, "tokens", tokens);
-		set(json, "examples", examples);
+		if (examples) {
+			if (!examples->getTables().empty()) {
+				json["examples"] = examples->getTables()[0];
+			}
+			set(json["examples"], "line", examples->lineNumber);
+			set(json["examples"], "keyword", examples->keyword);
+		}
 		set_params(json, tokens);
 		return json;
 	}
