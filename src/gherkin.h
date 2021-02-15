@@ -244,7 +244,7 @@ namespace Gherkin {
 		GherkinSteps steps;
 		std::unique_ptr<GherkinTable> examples;
 	public:
-		static GeneratedScript* generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack);
+		static GeneratedScript* generate(const GherkinStep& owner, const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
 		void replace(GherkinTables& tabs, GherkinMultilines& mlns);
 		const std::string filename;
@@ -266,7 +266,7 @@ namespace Gherkin {
 	public:
 		GherkinElement(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinElement(const GherkinElement& src, const GherkinParams& params);
-		virtual void generate(const ScenarioMap& map, const SnippetStack& stack);
+		virtual void generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinTable* pushTable(const GherkinLine& line);
 		GherkinMultiline* pushMultiline(const GherkinLine& line);
@@ -300,7 +300,7 @@ namespace Gherkin {
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinStep(const GherkinStep& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
-		virtual void generate(const ScenarioMap& map, const SnippetStack& stack) override;
+		virtual void generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack) override;
 		virtual void replace(GherkinTables& tabs, GherkinMultilines& mlns) override;
 		virtual GherkinSnippet getSnippet() const override;
 		virtual GherkinElement* copy(const GherkinParams& params) const override;
@@ -415,6 +415,7 @@ namespace Gherkin {
 	public:
 		GherkinDocument(GherkinProvider& provider, const BoostPath& path);
 		GherkinDocument(GherkinProvider& provider, const std::string& text);
+		GeneratedScript* find(const GherkinSnippet& snippet, const GherkinStep& owner) const;
 		const BoostPath filepath;
 		const time_t filetime;
 		void next(GherkinLexer& lexer);

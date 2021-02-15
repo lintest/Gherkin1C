@@ -811,28 +811,38 @@ namespace Gherkin {
 		return json;
 	}
 
-	GeneratedScript* GeneratedScript::generate(const GherkinStep& owner, const ScenarioMap& map, const SnippetStack& stack)
+	GeneratedScript* GeneratedScript::generate(const GherkinStep& owner, const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
 	{
 		auto snippet = owner.getSnippet();
-		if (snippet.empty())
-			return nullptr;
+		if (snippet.empty()) return nullptr;
+		if (stack.count(snippet)) return nullptr;
 
-		if (stack.count(snippet))
-			return nullptr;
-
-		auto it = map.find(snippet);
-		if (it == map.end())
-			return nullptr;
-
+		std::unique_ptr<GeneratedScript> result;
+		result.reset(doc.find(snippet, owner));
+		if (!result) {
+			auto it = map.find(snippet);
+			if (it == map.end()) return nullptr;
+			const ExportScenario& definition = it->second;
+			result.reset(new GeneratedScript(owner, definition));
+		}
 		SnippetStack next = stack;
 		next.insert(snippet);
 
-		const ExportScenario& definition = it->second;
-		auto result = std::make_unique<GeneratedScript>(owner, definition);
 		for (auto& step : result->steps)
-			step->generate(map, next);
+			step->generate(doc, map, next);
 
 		return result.release();
+	}
+
+	GeneratedScript* GherkinDocument::find(const GherkinSnippet& snippet, const GherkinStep& owner) const
+	{
+		for (auto& def : scenarios) {
+			if (def->getSnippet() == snippet) {
+				ExportScenario exp({ *this, *def });
+				return new GeneratedScript(owner, exp);
+			}
+		}
+		return nullptr;
 	}
 
 	GeneratedScript::GeneratedScript(const GherkinStep& owner, const ExportScenario& definition)
@@ -936,10 +946,10 @@ namespace Gherkin {
 		tags = std::move(lexer.tagStack);
 	}
 
-	void GherkinElement::generate(const ScenarioMap& map, const SnippetStack& stack)
+	void GherkinElement::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
 	{
 		for (auto& it : steps)
-			it->generate(map, stack);
+			it->generate(doc, map, stack);
 	}
 
 	GherkinElement* GherkinElement::push(GherkinLexer& lexer, const GherkinLine& line)
@@ -1162,10 +1172,10 @@ namespace Gherkin {
 		return tabs;
 	}
 
-	void GherkinStep::generate(const ScenarioMap& map, const SnippetStack& stack)
+	void GherkinStep::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
 	{
-		script.reset(GeneratedScript::generate(*this, map, stack));
-		GherkinElement::generate(map, stack);
+		script.reset(GeneratedScript::generate(*this, doc, map, stack));
+		GherkinElement::generate(doc, map, stack);
 		if (script) {
 			auto tabs = reverse(tables);
 			auto mlns = reverse(multilines);
@@ -1553,10 +1563,10 @@ namespace Gherkin {
 	{
 		try {
 			if (background)
-				background->generate(map, {});
+				background->generate(*this, map, {});
 
 			for (auto& def : scenarios)
-				def->generate(map, {});
+				def->generate(*this, map, {});
 		}
 		catch (const std::exception& e) {
 			errors.emplace_back(e);
