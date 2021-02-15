@@ -573,6 +573,16 @@ namespace Gherkin {
 		json["text"] = text;
 		json["column"] = column;
 		json["type"] = type2str();
+		if (type == TokenType::Number) {
+			try {
+				std::string str = text;
+				boost::replace_all(str, ",", ".");
+				json["text"] = std::stold(str);
+			}
+			catch (std::exception& e) {
+				json["error"] = e.what();
+			}
+		}
 
 		if (symbol != 0)
 			json["symbol"] = std::string(1, symbol);
