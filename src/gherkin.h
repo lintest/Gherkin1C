@@ -174,22 +174,19 @@ namespace Gherkin {
 
 	class GherkinLine {
 	private:
-		const size_t lineNumber;
-		const std::string text;
-		const std::wstring wstr;
 		GherkinTokens tokens;
 	private:
 		std::unique_ptr<GherkinKeyword> keyword;
 	public:
 		GherkinLine(GherkinLexer& l);
 		GherkinLine(size_t lineNumber);
+		const size_t lineNumber;
+		const std::string text;
+		const std::wstring wstr;
 		void push(GherkinLexer& lexer, TokenType type, char ch);
 		GherkinKeyword* matchKeyword(GherkinDocument& document);
 		const GherkinTokens getTokens() const { return tokens; }
 		const GherkinKeyword* getKeyword() const { return keyword.get(); }
-		size_t getLineNumber() const { return lineNumber; }
-		std::wstring getWstr() const { return wstr; }
-		std::string getText() const { return text; }
 		TokenType getType() const;
 		int getIndent() const;
 		operator JSON() const;
@@ -391,8 +388,8 @@ namespace Gherkin {
 		StringLine(const GherkinLine& line);
 		StringLine(const StringLine& src);
 		StringLine(size_t lineNumber);
-		const std::string text;
 		const std::wstring wstr;
+		const std::string text;
 		const size_t lineNumber;
 		operator JSON() const;
 	};
