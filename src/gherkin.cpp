@@ -889,7 +889,7 @@ namespace Gherkin {
 	}
 
 	GherkinElement::GherkinElement(const GherkinElement& src, const GherkinParams& params)
-		: wstr(src.wstr), text(src.text), lineNumber(0)
+		: wstr(src.wstr), text(src.text), lineNumber(src.lineNumber)
 	{
 		for (auto& step : src.steps) {
 			steps.emplace_back(step->copy(params));
