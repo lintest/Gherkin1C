@@ -38,7 +38,7 @@ namespace Gherkin {
 			json[key] = value;
 	}
 
-	void set(JSON& json, const std::string& key, const FileCache &value) {
+	void set(JSON& json, const std::string& key, const FileCache& value) {
 		if (!value.empty()) {
 			JSON js;
 			for (const auto& [key, val] : value) {
@@ -158,7 +158,7 @@ namespace Gherkin {
 		}
 	};
 
-	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string &name, const std::string& text)
+	GherkinProvider::Keyword::Keyword(KeywordType type, const std::string& name, const std::string& text)
 		:type(type), name(name), text(text)
 	{
 		static const std::string regex = reflex::Matcher::convert("\\w+", reflex::convert_flag::unicode);
@@ -605,10 +605,8 @@ namespace Gherkin {
 	}
 
 	GherkinLine::GherkinLine(GherkinLexer& l)
-		: lineNumber(l.lineno()), text(l.matcher().line())
+		: lineNumber(l.lineno()), text(l.matcher().line()), wstr(MB2WC(text))
 	{
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		wstr = converter.from_bytes(text);
 	}
 
 	GherkinLine::GherkinLine(size_t lineNumber)
@@ -675,47 +673,77 @@ namespace Gherkin {
 		return INT_MAX;
 	}
 
-	GherkinTable::GherkinTable(const GherkinLine& line)
-		: lineNumber(line.getLineNumber())
+	GherkinTable::TableRow::TableRow(const GherkinLine& line)
+		: lineNumber(line.getLineNumber()), text(line.getText())
 	{
 		for (auto& token : line.getTokens()) {
-			if (token.getType() == TokenType::Cell)
-				head.push_back(token);
+			if (token.getType() != TokenType::Table)
+				tokens.emplace_back(token);
 		}
 	}
 
-	GherkinTable::GherkinTable(const GherkinTable& src, const GherkinParams& params)
-		: lineNumber(0)
+	GherkinTable::TableRow::TableRow(const TableRow& src, const GherkinParams& params)
+		: lineNumber(src.lineNumber), text(src.text)
 	{
-		for (auto& token : src.head) {
-			head.emplace_back(token);
-			head.back().replace(params);
+		for (auto& token : src.tokens) {
+			tokens.emplace_back(token);
+			tokens.back().replace(params);
 		}
-		for (auto& src_row : src.body) {
-			body.push_back({});
-			auto& row = body.back();
-			for (auto& cell : src_row) {
-				row.emplace_back(cell);
-				row.back().replace(params);
-			}
+	}
+
+	void GherkinTable::TableRow::push(const GherkinToken& token, const GherkinParams& params)
+	{
+		tokens.emplace_back(token);
+		tokens.back().replace(params);
+	}
+
+	GherkinTable::TableRow& GherkinTable::TableRow::operator=(const TableRow& src)
+	{
+		lineNumber = src.lineNumber;
+		tokens = src.tokens;
+		text = src.text;
+		return *this;
+	}
+
+	GherkinTable::TableRow::operator JSON() const
+	{
+		JSON json;
+		set(json, "line", lineNumber);
+		set(json, "text", text);
+		set(json, "tokens", tokens);
+		return json;
+	}
+
+	GherkinTable::GherkinTable(const GherkinLine& line)
+		: lineNumber(line.getLineNumber()), head(line)
+	{
+	}
+
+	GherkinTable::GherkinTable(const GherkinTable& src, const GherkinParams& params)
+		: lineNumber(0), head(src.head, params)
+	{
+		for (auto& row : src.body) {
+			body.emplace_back(row, params);
 		}
 	}
 
 	GherkinTable& GherkinTable::operator=(const GherkinTable& src)
 	{
+		if (std::addressof(*this) == std::addressof(src))
+			throw "Assign object to himself";
+
 		head = src.head;
-		body = src.body;
+		body.clear();
+		const GherkinParams params;
+		for (auto& row : src.body) {
+			body.emplace_back(row, params);
+		}
 		return *this;
 	}
 
 	void GherkinTable::push(const GherkinLine& line)
 	{
-		body.push_back({});
-		auto& row = body.back();
-		for (auto& token : line.getTokens()) {
-			if (token.getType() == TokenType::Cell)
-				row.push_back(token);
-		}
+		body.emplace_back(line);
 	}
 
 	GherkinTable::operator JSON() const
@@ -1217,6 +1245,11 @@ namespace Gherkin {
 
 	GherkinException::GherkinException(const GherkinException& src)
 		: std::runtime_error(*this), line(src.line), column(src.column)
+	{
+	}
+
+	GherkinException::GherkinException(size_t line, char const* const message)
+		: std::runtime_error(message), line(line), column(0)
 	{
 	}
 

@@ -175,10 +175,10 @@ namespace Gherkin {
 
 	class GherkinLine {
 	private:
-		std::wstring wstr;
+		const size_t lineNumber;
+		const std::string text;
+		const std::wstring wstr;
 		GherkinTokens tokens;
-		std::string text;
-		size_t lineNumber;
 	private:
 		std::unique_ptr<GherkinKeyword> keyword;
 	public:
@@ -198,9 +198,22 @@ namespace Gherkin {
 
 	class GherkinTable {
 	private:
-		size_t lineNumber;
-		GherkinTokens head;
-		std::vector<GherkinTokens> body;
+		class TableRow {
+		private:
+			std::string text;
+			size_t lineNumber;
+			GherkinTokens tokens;
+		public:
+			TableRow(const GherkinLine& line);
+			TableRow(const TableRow& src, const GherkinParams& params);
+			void push(const GherkinToken& token, const GherkinParams& params);
+			TableRow& operator=(const TableRow& src);
+			bool empty() const { return tokens.empty(); }
+			operator JSON() const;
+		};
+		TableRow head;
+		std::vector<TableRow> body;
+		const size_t lineNumber;
 	public:
 		GherkinTable(const GherkinLine& line);
 		GherkinTable(const GherkinTable& src, const GherkinParams& params);
@@ -355,6 +368,7 @@ namespace Gherkin {
 	public:
 		GherkinException(GherkinLexer& lexer, const std::string& message);
 		GherkinException(GherkinLexer& lexer, char const* const message);
+		GherkinException(size_t line, char const* const message);
 		GherkinException(const GherkinException& src);
 		GherkinException(char const* const message);
 		operator JSON() const;
