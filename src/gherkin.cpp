@@ -593,7 +593,6 @@ namespace Gherkin {
 		case TokenType::Colon: return "Colon";
 		case TokenType::Param: return "Param";
 		case TokenType::Table: return "Table";
-		case TokenType::Cell: return "Cell";
 		case TokenType::Line: return "Line";
 		case TokenType::Date: return "Date";
 		case TokenType::Text: return "Text";

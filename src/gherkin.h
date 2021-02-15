@@ -29,7 +29,6 @@ namespace Gherkin {
 		Colon,
 		Param,
 		Table,
-		Cell,
 		Line,
 		Text,
 		Date,
