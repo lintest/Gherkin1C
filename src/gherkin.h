@@ -1,6 +1,4 @@
-#ifndef GHERKIN_H
-#define GHERKIN_H
-
+#pragma once
 #include <vector>
 #include <string>
 #include <memory>
@@ -59,6 +57,7 @@ namespace Gherkin {
 	class AbsractDefinition;
 	class GherkinDefinition;
 	class GherkinMultiline;
+	class GeneratedScript;
 	class ExportScenario;
 	class GherkinKeyword;
 	class GherkinToken;
@@ -199,8 +198,10 @@ namespace Gherkin {
 			std::string text;
 			size_t lineNumber;
 			GherkinTokens tokens;
+			std::unique_ptr<GeneratedScript> script = nullptr;
 		public:
 			TableRow(const GherkinLine& line);
+			TableRow(const TableRow& src);
 			TableRow(const TableRow& src, const GherkinParams& params);
 			void push(const GherkinToken& token, const GherkinParams& params);
 			TableRow& operator=(const TableRow& src);
@@ -212,6 +213,7 @@ namespace Gherkin {
 		const size_t lineNumber;
 	public:
 		GherkinTable(const GherkinLine& line);
+		GherkinTable(const GherkinTable& src);
 		GherkinTable(const GherkinTable& src, const GherkinParams& params);
 		bool empty() const { return head.empty() && body.empty(); }
 		GherkinTable& operator=(const GherkinTable& src);
@@ -341,6 +343,7 @@ namespace Gherkin {
 		GherkinDefinition(const GherkinDocument& doc, const GherkinDefinition& def);
 		GherkinDefinition(const GherkinDefinition& src, const GherkinParams& params);
 		const GherkinTokens& getTokens() const { return tokens; }
+		virtual void generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack) override;
 		virtual void replace(GherkinTables& tabs, GherkinMultilines& mlns) override;
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
 		virtual GherkinElement* copy(const GherkinParams& params) const override;
@@ -439,5 +442,3 @@ namespace Gherkin {
 #define WM_PARSING_FINISHED (WM_USER + 4)
 
 #endif//_WINDOWS
-
-#endif//GHERKIN_H

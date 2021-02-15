@@ -691,6 +691,14 @@ namespace Gherkin {
 		}
 	}
 
+	GherkinTable::TableRow::TableRow(const TableRow& src)
+		: lineNumber(src.lineNumber), text(src.text)
+	{
+		for (auto& token : src.tokens) {
+			tokens.emplace_back(token);
+		}
+	}
+
 	GherkinTable::TableRow::TableRow(const TableRow& src, const GherkinParams& params)
 		: lineNumber(src.lineNumber), text(src.text)
 	{
@@ -728,6 +736,14 @@ namespace Gherkin {
 	{
 	}
 
+	GherkinTable::GherkinTable(const GherkinTable& src)
+		: lineNumber(0), head(src.head)
+	{
+		for (auto& row : src.body) {
+			body.emplace_back(row);
+		}
+	}
+
 	GherkinTable::GherkinTable(const GherkinTable& src, const GherkinParams& params)
 		: lineNumber(0), head(src.head, params)
 	{
@@ -743,9 +759,8 @@ namespace Gherkin {
 
 		head = src.head;
 		body.clear();
-		const GherkinParams params;
 		for (auto& row : src.body) {
-			body.emplace_back(row, params);
+			body.emplace_back(row);
 		}
 		return *this;
 	}
@@ -855,15 +870,10 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	GeneratedScript::GeneratedScript(const GherkinStep& owner, const ExportScenario& definition)
-		: filename(WC2MB(definition.filepath.wstring()))
-		, snippet(definition.getSnippet())
+	static void fill(GherkinParams& params, const GherkinTokens& owner, const GherkinTokens& definition)
 	{
-		if (auto t = definition.getExamples())
-			examples.reset(new GherkinTable(*t));
-
-		std::vector<GherkinToken> source, target;
-		for (auto& token : owner.getTokens()) {
+		GherkinTokens source, target;
+		for (auto& token : owner) {
 			switch (token.getType()) {
 			case TokenType::Param:
 			case TokenType::Number:
@@ -872,7 +882,7 @@ namespace Gherkin {
 				break;
 			}
 		}
-		for (auto& token : definition.getTokens()) {
+		for (auto& token : definition) {
 			switch (token.getType()) {
 			case TokenType::Param:
 			case TokenType::Number:
@@ -894,6 +904,16 @@ namespace Gherkin {
 			++s;
 			++t;
 		}
+	}
+
+	GeneratedScript::GeneratedScript(const GherkinStep& owner, const ExportScenario& definition)
+		: filename(WC2MB(definition.filepath.wstring()))
+		, snippet(definition.getSnippet())
+	{
+		if (auto t = definition.getExamples()) {
+			examples.reset(new GherkinTable(*t));
+		}
+		fill(params, owner.getTokens(), definition.getTokens());
 		for (auto& step : definition.steps) {
 			steps.emplace_back(step->copy(params));
 		}
@@ -1100,6 +1120,16 @@ namespace Gherkin {
 	{
 		if (src.examples)
 			examples.reset((GherkinStep*)src.examples->copy(params));
+	}
+
+	void GherkinDefinition::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
+	{
+		if (keyword.getType() == KeywordType::ScenarioOutline) {
+			AbsractDefinition::generate(doc, map, stack);
+		}
+		else {
+			AbsractDefinition::generate(doc, map, stack);
+		}
 	}
 
 	void GherkinDefinition::replace(GherkinTables& tabs, GherkinMultilines& mlns)
