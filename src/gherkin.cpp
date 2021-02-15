@@ -893,7 +893,7 @@ namespace Gherkin {
 		}
 		auto s = source.begin();
 		auto t = target.begin();
-		while (s != source.end() && t != target.end()) {
+		for (; s != source.end() && t != target.end(); ++s, ++t) {
 			if (t->getType() == TokenType::Param) {
 				auto key = lower(t->getWstr());
 				if (params.count(key) == 0)
@@ -901,8 +901,6 @@ namespace Gherkin {
 				else
 					throw GherkinException("Duplicate param keys");
 			}
-			++s;
-			++t;
 		}
 	}
 
@@ -914,6 +912,13 @@ namespace Gherkin {
 			examples.reset(new GherkinTable(*t));
 		}
 		fill(params, owner.getTokens(), definition.getTokens());
+		for (auto& step : definition.steps) {
+			steps.emplace_back(step->copy(params));
+		}
+	}
+
+	GeneratedScript::GeneratedScript(const GherkinDefinition& definition, const GherkinParams& params)
+	{
 		for (auto& step : definition.steps) {
 			steps.emplace_back(step->copy(params));
 		}
@@ -1122,10 +1127,31 @@ namespace Gherkin {
 			examples.reset((GherkinStep*)src.examples->copy(params));
 	}
 
+	GherkinParams GherkinTable::params(const TableRow& row) const
+	{
+		GherkinParams params;
+		auto i = head.tokens.begin();
+		auto j = row.tokens.begin();
+		for (; i != head.tokens.end() && j != row.tokens.end(); ++i, ++j) {
+			auto key = lower(i->getWstr());
+			if (params.count(key) == 0)
+				params.emplace(key, *j);
+			else
+				throw GherkinException("Duplicate param keys");
+		}
+		return params;
+	}
+
 	void GherkinDefinition::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
 	{
 		if (keyword.getType() == KeywordType::ScenarioOutline) {
-			AbsractDefinition::generate(doc, map, stack);
+			if (examples && !examples->tables.empty()) {
+				auto& table = examples->tables[0];
+				for (auto& row : table.body) {
+					auto params = table.params(row);
+					row.script.reset(new GeneratedScript(*this, params));
+				}
+			}
 		}
 		else {
 			AbsractDefinition::generate(doc, map, stack);

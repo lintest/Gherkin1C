@@ -199,6 +199,8 @@ namespace Gherkin {
 			size_t lineNumber;
 			GherkinTokens tokens;
 			std::unique_ptr<GeneratedScript> script = nullptr;
+			friend class GherkinTable;
+			friend class GherkinDefinition;
 		public:
 			TableRow(const GherkinLine& line);
 			TableRow(const TableRow& src);
@@ -208,13 +210,16 @@ namespace Gherkin {
 			bool empty() const { return tokens.empty(); }
 			operator JSON() const;
 		};
+	private:
 		TableRow head;
 		std::vector<TableRow> body;
 		const size_t lineNumber;
+		friend class GherkinDefinition;
 	public:
 		GherkinTable(const GherkinLine& line);
 		GherkinTable(const GherkinTable& src);
 		GherkinTable(const GherkinTable& src, const GherkinParams& params);
+		GherkinParams params(const TableRow& row) const;
 		bool empty() const { return head.empty() && body.empty(); }
 		GherkinTable& operator=(const GherkinTable& src);
 		void push(const GherkinLine& line);
@@ -248,6 +253,7 @@ namespace Gherkin {
 	public:
 		static GeneratedScript* generate(const GherkinStep& owner, const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack);
 		GeneratedScript(const GherkinStep& owner, const ExportScenario& definition);
+		GeneratedScript(const GherkinDefinition& definition, const GherkinParams& params);
 		void replace(GherkinTables& tabs, GherkinMultilines& mlns);
 		const std::string filename;
 		const GherkinSnippet snippet;
@@ -298,6 +304,7 @@ namespace Gherkin {
 		GherkinKeyword keyword;
 		GherkinTokens tokens;
 		std::unique_ptr<GeneratedScript> script;
+		friend class GherkinDefinition;
 	public:
 		GherkinStep(GherkinLexer& lexer, const GherkinLine& line);
 		GherkinStep(const GherkinStep& src, const GherkinParams& params);
