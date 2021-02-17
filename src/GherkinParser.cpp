@@ -16,7 +16,7 @@ GherkinParser::GherkinParser()
 
 	AddProperty(u"EscapedCharacters", u"ЭкранируемыеСимволы",
 		[&](VH value) { value = this->provider->escapedCharacters; },
-		[&](VH value) { this->provider->escapedCharacters = value; }
+		[&](VH value) { this->provider->escapedCharacters = (std::wstring)value; }
 	);
 
 	AddFunction(u"Parse", u"Прочитать",
