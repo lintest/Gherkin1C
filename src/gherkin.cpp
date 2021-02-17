@@ -122,7 +122,7 @@ namespace Gherkin {
 		return rtrim(ltrim(s));
 	}
 
-	static int indent(const std::string &text)
+	static int indent(const std::string& text)
 	{
 		int indent = 0;
 		const int tabSize = 4;
@@ -341,54 +341,97 @@ namespace Gherkin {
 		return files;
 	}
 
+#ifdef _WINDOWS
+
+	static std::string cp1251_to_utf8(const char* str) {
+		int size_u = MultiByteToWideChar(1251, 0, str, -1, 0, 0);
+		if (!size_u) return {};
+		std::wstring ures((size_t)size_u, 0);
+		if (!MultiByteToWideChar(1251, 0, str, -1, ures.data(), size_u)) return {};
+		int size_c = WideCharToMultiByte(65001, 0, ures.data(), -1, 0, 0, 0, 0);
+		if (!size_c) return {};
+		std::string cres((size_t)size_c, 0);
+		if (!WideCharToMultiByte(65001, 0, ures.data(), -1, cres.data(), size_c, 0, 0)) return {};
+		return cres;
+	}
+
+#else
+
+	static std::string cp1251_to_utf8(const char* str)
+	{
+		return str;
+	}
+
+#endif
+
+	static void push(JSON& json, const std::string& message, const BoostPath& path) {
+		json.push_back({ {"filename", WC2MB(path.wstring()) }, {"errors", {{"message", message}} } });
+	}
+
 	void GherkinProvider::ScanFolder(size_t id, AbstractProgress* progress, const BoostPath& root, ScanParams& params)
 	{
-		if (root.empty()) return;
-		auto files = GetDirFiles(id, root);
-		if (progress) progress->Start(WC2MB(root.wstring()), files.size(), "scan");
+		try {
+			if (root.empty()) return;
+			auto files = GetDirFiles(id, root);
+			if (progress) progress->Start(WC2MB(root.wstring()), files.size(), "scan");
 
-		for (auto& path : files) {
-			if (id != identifier) return;
-			auto it = fileCache.find(path);
-			time_t time = 0;
-			if (it != fileCache.end()) {
-				auto& info = it->second;
-				if (info.first == identifier) continue;
-				time = boost::filesystem::last_write_time(path);
-				if (time == info.second) continue;
+			for (auto& path : files) {
+				if (id != identifier) return;
+				auto it = fileCache.find(path);
+				time_t time = 0;
+				if (it != fileCache.end()) {
+					auto& info = it->second;
+					if (info.first == identifier) continue;
+					time = boost::filesystem::last_write_time(path);
+					if (time == info.second) continue;
+				}
+				if (progress) progress->Step(path);
+				if (time == 0) time = boost::filesystem::last_write_time(path);
+				auto doc = std::make_unique<GherkinDocument>(*this, path);
+				doc->getExportSnippets(snippets);
+				fileCache[path] = { identifier, time };
+				params.cashe.emplace(path, doc.release());
 			}
-			if (progress) progress->Step(path);
-			if (time == 0) time = boost::filesystem::last_write_time(path);
-			auto doc = std::make_unique<GherkinDocument>(*this, path);
-			doc->getExportSnippets(snippets);
-			fileCache[path] = { identifier, time };
-			params.cashe.emplace(path, doc.release());
+		}
+		catch (boost::filesystem::filesystem_error& e) {
+			push(params.json, cp1251_to_utf8(e.what()), root);
+		}
+		catch (std::exception& e) {
+			push(params.json, e.what(), root);
 		}
 	}
 
 	void GherkinProvider::DumpFolder(size_t id, AbstractProgress* progress, const BoostPath& root, ScanParams& params)
 	{
-		if (root.empty()) return;
-		auto files = GetDirFiles(id, root);
-		if (progress) progress->Start(WC2MB(root.wstring()), files.size(), "dump");
+		try {
+			if (root.empty()) return;
+			auto files = GetDirFiles(id, root);
+			if (progress) progress->Start(WC2MB(root.wstring()), files.size(), "dump");
 
-		for (auto& path : files) {
-			if (id != identifier) return;
-			if (progress) progress->Step(path);
-			if (params.ready.count(path) != 0) continue;
-			params.ready.insert(path);
-			std::unique_ptr<GherkinDocument> doc;
-			auto it = params.cashe.find(path);
-			if (it == params.cashe.end())
-				doc.reset(new GherkinDocument(*this, path));
-			else {
-				doc.reset(it->second.release());
-				params.cashe.erase(it);
+			for (auto& path : files) {
+				if (id != identifier) return;
+				if (progress) progress->Step(path);
+				if (params.ready.count(path) != 0) continue;
+				params.ready.insert(path);
+				std::unique_ptr<GherkinDocument> doc;
+				auto it = params.cashe.find(path);
+				if (it == params.cashe.end())
+					doc.reset(new GherkinDocument(*this, path));
+				else {
+					doc.reset(it->second.release());
+					params.cashe.erase(it);
+				}
+				doc->generate(snippets);
+				auto js = doc->dump(params.filter);
+				if (!js.empty())
+					params.json.push_back(js);
 			}
-			doc->generate(snippets);
-			auto js = doc->dump(params.filter);
-			if (!js.empty())
-				params.json.push_back(js);
+		}
+		catch (boost::filesystem::filesystem_error& e) {
+			push(params.json, cp1251_to_utf8(e.what()), root);
+		}
+		catch (std::exception& e) {
+			push(params.json, e.what(), root);
 		}
 	}
 
@@ -666,9 +709,9 @@ namespace Gherkin {
 	}
 
 	GherkinLine::GherkinLine(GherkinLexer& l)
-		: lineNumber(l.lineno()), 
-		text(l.matcher().line()), 
-		wstr(l.matcher().wline()), 
+		: lineNumber(l.lineno()),
+		text(l.matcher().line()),
+		wstr(l.matcher().wline()),
 		indent(::indent(text))
 	{
 	}
@@ -1274,7 +1317,7 @@ namespace Gherkin {
 			}
 			if (changed) {
 				std::wstringstream ss;
-				for (auto& ch : wstr) 
+				for (auto& ch : wstr)
 					if (std::isspace(ch)) ss << ch; else break;
 
 				ss << tokens;
@@ -1405,9 +1448,10 @@ namespace Gherkin {
 	GherkinException::operator JSON() const
 	{
 		JSON json;
-		json["line"] = line;
-		json["column"] = column;
-		json["message"] = what();
+		std::wstring wstr = MB2WC(what());
+		set(json, "line", line);
+		set(json, "column", column);
+		json["message"] = WC2MB(wstr);
 		return json;
 	}
 
