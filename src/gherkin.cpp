@@ -576,31 +576,30 @@ namespace Gherkin {
 		if (ch != 0) {
 			bool escaping = false;
 			std::wstringstream ss;
-			for (auto it = wstr.begin(); it != wstr.end(); ++it) {
-				if (it == wstr.begin() || (it + 1) == wstr.end())
-					continue;
-
+			for (auto it = wstr.begin() + 1; it + 1 != wstr.end(); ++it) {
 				if (escaping) {
 					escaping = false;
 					wchar_t wc = *it;
-					switch (wc) {
-					case L'\"': ss << L'\"'; break;
-					case L'\'': ss << L'\''; break;
-					case L't': ss << L'\t'; break;
-					case L'n': ss << L'\n'; break;
-					case L'r': ss << L'\r'; break;
-					case L'|': ss << L'|'; break;
-					default:
-						if (lexer.isPrimitiveEscaping())
-							ss << L'\\';
-						ss << wc;
-					}
+					if (lexer.escaped(wc))
+						switch (wc) {
+						case L'a': wc = L'\a'; break;
+						case L'b': wc = L'\b'; break;
+						case L'f': wc = L'\f'; break;
+						case L'n': wc = L'\n'; break;
+						case L'r': wc = L'\r'; break;
+						case L't': wc = L'\t'; break;
+						case L'v': wc = L'\v'; break;
+						case L'0': wc = L'\0'; break;
+						}
+					else ss << L'\\';
+					ss << wc;
 				}
 				else {
-					if (*it == L'\\')
-						escaping = true;
-					else
-						ss << *it;
+					if (*it == L'\\') {
+						if (it + 2 == wstr.end()) ss << *it;
+						else escaping = true;
+					}
+					else ss << *it;
 				}
 			}
 			wstr = ss.str();
@@ -1751,9 +1750,10 @@ namespace Gherkin {
 		}
 	}
 
-	bool GherkinDocument::isPrimitiveEscaping() const
+	bool GherkinDocument::isEscapedChar(wchar_t ch) const
 	{
-		return provider.primitiveEscaping;
+		if (provider.escapedCharacters.empty()) return true;
+		return provider.escapedCharacters.find(ch) != std::string::npos;
 	}
 
 	const StringLines& GherkinDocument::getTags() const
