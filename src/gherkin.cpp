@@ -473,7 +473,7 @@ namespace Gherkin {
 		if (path.empty()) return {};
 		size_t id = ++identifier;
 		ScanParams params({});
-		JSON libraries;
+		JSON libraries, result;
 
 		try {
 			if (!libs.empty())
@@ -487,15 +487,26 @@ namespace Gherkin {
 			ScanFolder(id, progress, MB2WC(dir), params);
 		}
 
-		std::unique_ptr<GherkinDocument> doc;
-		auto it = params.cashe.find(path);
-		if (it == params.cashe.end())
-			doc.reset(new GherkinDocument(*this, path));
-		else {
-			doc.reset(it->second.release());
+		try {
+			std::unique_ptr<GherkinDocument> doc;
+			auto it = params.cashe.find(path);
+			if (it == params.cashe.end())
+				doc.reset(new GherkinDocument(*this, path));
+			else {
+				doc.reset(it->second.release());
+			}
+			doc->generate(snippets);
+			result = JSON(*doc);
 		}
-		doc->generate(snippets);
-		return JSON(*doc).dump();
+		catch (boost::filesystem::filesystem_error& e) {
+			auto message = cp1251_to_utf8(e.what());
+			result["errors"].push_back({{"message", message}});
+		}
+		catch (std::exception& e) {
+			result["errors"].push_back({ {"message", e.what()} });
+		}
+
+		return result.dump();
 	}
 
 	std::string GherkinProvider::ParseText(const std::string& text)
