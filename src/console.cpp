@@ -103,7 +103,8 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 	}
 
 	if (argc > 1) {
-		std::cout << provider.ParseFolder(WC2MB(argv[1]), "[]", {});
+		auto dir = WC2MB(argv[1]);
+		std::cout << provider.ParseFolder(dir, dir, {});
 	}
 
 	return 0;
