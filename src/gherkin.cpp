@@ -1050,10 +1050,12 @@ namespace Gherkin {
 	{
 		for (auto& step : steps) {
 			step->replace(tabs, mlns);
+			for (auto& table : step->tables) 
+				table = GherkinTable(table, params);
 		}
 		if (examples) {
 			if (!tabs.empty()) {
-				*examples = tabs.back();
+				*examples = GherkinTable(tabs.back(), params);
 				tabs.pop_back();
 			}
 			auto& table = *examples;
