@@ -969,11 +969,8 @@ namespace Gherkin {
 		}
 		SnippetStack next = stack;
 		next.insert(snippet);
-
-		if (!result->examples) {
-			for (auto& step : result->steps)
-				step->generate(doc, map, next);
-		}
+		for (auto& step : result->steps)
+			step->generate(doc, map, next);
 
 		return result.release();
 	}
@@ -1051,14 +1048,14 @@ namespace Gherkin {
 
 	void GeneratedScript::replace(GherkinTables& tabs, GherkinMultilines& mlns)
 	{
-		if (examples && !tabs.empty()) {
-			*examples = tabs.back();
-			tabs.pop_back();
-		}
 		for (auto& step : steps) {
 			step->replace(tabs, mlns);
 		}
 		if (examples) {
+			if (!tabs.empty()) {
+				*examples = tabs.back();
+				tabs.pop_back();
+			}
 			auto& table = *examples;
 			for (auto& row : table.body) {
 				auto params = table.params(row);
@@ -1276,17 +1273,13 @@ namespace Gherkin {
 
 	void GherkinDefinition::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
 	{
-		if (keyword.getType() == KeywordType::ScenarioOutline) {
-			if (examples && !examples->tables.empty()) {
-				auto& table = examples->tables[0];
-				for (auto& row : table.body) {
-					auto params = table.params(row);
-					row.script.reset(new GeneratedScript(*this, params));
-				}
+		AbsractDefinition::generate(doc, map, stack);
+		if (examples && !examples->tables.empty()) {
+			auto& table = examples->tables[0];
+			for (auto& row : table.body) {
+				auto params = table.params(row);
+				row.script.reset(new GeneratedScript(*this, params));
 			}
-		}
-		else {
-			AbsractDefinition::generate(doc, map, stack);
 		}
 	}
 
