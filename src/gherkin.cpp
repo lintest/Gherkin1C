@@ -702,8 +702,8 @@ namespace Gherkin {
 	GherkinToken::operator JSON() const
 	{
 		JSON json;
-		json["text"] = text;
 		json["column"] = column;
+		json["text"] = WC2MB(wstr);
 		json["type"] = type2str();
 		if (type == TokenType::Number) {
 			try {
