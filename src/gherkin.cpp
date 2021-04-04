@@ -672,7 +672,7 @@ namespace Gherkin {
 			}
 			else {
 				std::wstringstream ss;
-				boost::wregex expression(L"(?<key>\[[0-9A-zА-яЁё]+\])|.");
+				boost::wregex expression(L"(?<key>\\[\\w+\\])|.");
 				std::wstring::const_iterator start = wstr.begin();
 				std::wstring::const_iterator end = wstr.end();
 				boost::match_results<std::wstring::const_iterator> what;
