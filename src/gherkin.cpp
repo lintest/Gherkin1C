@@ -672,26 +672,27 @@ namespace Gherkin {
 			}
 			else {
 				std::wstringstream ss;
-				boost::wregex expression(L"(?<key>\\[\\w+\\])|.");
+				static const boost::wregex expression(L"\\[\\w+\\]");
 				std::wstring::const_iterator start = wstr.begin();
 				std::wstring::const_iterator end = wstr.end();
 				boost::match_results<std::wstring::const_iterator> what;
 				boost::match_flag_type flags = boost::match_default;
 				while (regex_search(start, end, what, expression, flags)) {
-					start = what[0].second;
-					std::wstring key = what[L"key"];
-					if (!key.empty()) {
-						key = key.substr(1, key.size() - 2);
-						auto it = params.find(key);
-						if (it != params.end()) {
-							ss << it->second.getWstr();
-							changed = true;
-							continue;
-						}
+					auto& match = what[0];
+					if (match.first > start)
+						ss << std::wstring(start, match.first);
+					start = match.second;
+					auto key = std::wstring(match.begin() + 1, match.end() - 1);
+					auto it = params.find(key);
+					if (it == params.end())
+						ss << match;
+					else {
+						ss << it->second.getWstr();
+						changed = true;
 					}
-					ss << what.str();
 				}
 				if (changed) {
+					ss << std::wstring(start, end);
 					wstr = ss.str();
 					text = WC2MB(wstr);
 				}
