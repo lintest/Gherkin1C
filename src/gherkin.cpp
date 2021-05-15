@@ -736,6 +736,32 @@ namespace Gherkin {
 		return os;
 	}
 
+	static JSON str2dec(const std::string& text, double numb, double sign) {
+		double mult = 0.1;
+		for (auto it = text.begin(); it != text.end(); ++it) {
+			numb += (*it - '0') * mult;
+			mult *= 0.1;
+		}
+		return numb * sign;
+	}
+
+	static JSON str2num(const std::string &text) {
+		int64_t numb = 0, sign = 1;
+		for (auto it = text.begin(); it != text.end(); ++it) {
+			switch (*it) {
+			case '-':
+				sign = -1;
+				break;
+			case ',':
+			case '.':
+				return str2dec(std::string(it + 1, text.end()), numb, sign);
+			default:
+				numb = numb * 10 + int64_t(*it - '0');
+			}
+		}
+		return numb * sign;
+	}
+
 	GherkinToken::operator JSON() const
 	{
 		JSON json;
@@ -745,9 +771,7 @@ namespace Gherkin {
 
 		if (type == TokenType::Number) {
 			try {
-				std::string str = text;
-				boost::replace_all(str, ",", ".");
-				json["text"] = std::stold(str);
+				json["text"] = str2num(text);
 			}
 			catch (std::exception& e) {
 				json["error"] = e.what();
