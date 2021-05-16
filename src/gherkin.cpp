@@ -8,9 +8,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
-static bool comparei(const std::wstring& a, const std::wstring& b)
+template<typename T>
+static bool comparei(const T& a, const T& b)
 {
-	upper(a).compare(upper(b)) == 0;
+	static const std::locale locale_ru("ru_RU.UTF-8");
+	return boost::iequals(a, b, locale_ru);
 }
 
 static FILE* fileopen(const BoostPath& path)
@@ -1847,7 +1849,7 @@ namespace Gherkin {
 	{
 		const std::string test = "ExportScenarios";
 		for (auto& tag : tags) {
-			if (boost::iequals(tag.text, test)) {
+			if (comparei(tag.text, test)) {
 				return true;
 			}
 		}
