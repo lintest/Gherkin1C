@@ -6,13 +6,11 @@
 #include <stdio.h>
 #include <reflex/matcher.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/locale.hpp>
 #include <boost/regex.hpp>
 
 static bool comparei(const std::wstring& a, const std::wstring& b)
 {
-	static const std::locale locale_ru("ru_RU.UTF-8");
-	return std::use_facet<boost::locale::collator<wchar_t>>(locale_ru).compare(boost::locale::collator_base::secondary, a, b);
+	upper(a).compare(upper(b)) == 0;
 }
 
 static FILE* fileopen(const BoostPath& path)
