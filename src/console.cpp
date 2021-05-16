@@ -88,6 +88,8 @@ std::wstring lower(const std::wstring& src)
 	return str;
 }
 
+#ifdef _WINDOWS
+
 int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 {
 	GherkinProvider provider;
@@ -108,3 +110,22 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 
 	return 0;
 }
+
+#else //_WINDOWS
+
+int main(int argc, char* argv[], char* envp[])
+{
+	GherkinProvider provider;
+
+	std::ifstream fstream;
+	fstream.open("/home/user/test/keywords.json");
+	std::string json((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
+	provider.setKeywords(json);
+
+	std::string dirs = "[\"/home/user/test/\"]";
+	std::wstring file = L"/home/user/test/test.feature";
+	std::cout << provider.ParseFile(file, dirs, nullptr);
+	return 0;
+}
+
+#endif //_WINDOWS
