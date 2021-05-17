@@ -62,24 +62,6 @@ namespace Gherkin {
 	class GherkinStep;
 	class StringLine;
 
-	struct ci_less
-	{
-		// case-independent (ci) compare_less binary function
-		struct nocase_compare
-		{
-			bool operator() (const wchar_t& c1, const wchar_t& c2) const {
-				std::locale locale_ru = std::locale("ru_RU.UTF-8");
-				return std::tolower(c1, locale_ru) < std::tolower(c2, locale_ru);
-			}
-		};
-		bool operator() (const std::wstring& s1, const std::wstring& s2) const {
-			return std::lexicographical_compare
-			(s1.begin(), s1.end(),   // source range
-				s2.begin(), s2.end(),   // dest range
-				nocase_compare());  // comparison
-		}
-	};
-
 	using GherkinSnippet = std::wstring;
 	using StringLines = std::vector<StringLine>;
 	using GherkinTokens = std::vector<GherkinToken>;
@@ -91,7 +73,7 @@ namespace Gherkin {
 	using GherkinMultilines = std::vector<GherkinMultiline>;
 	using ScenarioRef = std::pair<const GherkinDocument&, const GherkinDefinition&>;
 	using ScenarioMap = std::map<GherkinSnippet, ExportScenario>;
-	using GherkinParams = std::map<std::wstring, GherkinToken, ci_less>;
+	using GherkinParams = std::map<std::wstring, GherkinToken>;
 	using BoostPath = boost::filesystem::path;
 	using BoostPaths = std::vector<BoostPath>;
 	using FileInfo = std::pair<size_t, time_t>;

@@ -670,7 +670,7 @@ namespace Gherkin {
 	{
 		bool changed = false;
 		if (type == TokenType::Param) {
-			auto key = getWstr();
+			auto key = lower(getWstr());
 			auto it = params.find(key);
 			if (it != params.end()) {
 				*this = it->second;
@@ -689,7 +689,7 @@ namespace Gherkin {
 						ss << std::wstring(start, match.first);
 					start = match.second;
 					auto key = std::wstring(match.begin() + 1, match.end() - 1);
-					auto it = params.find(key);
+					auto it = params.find(lower(key));
 					if (it == params.end())
 						ss << match;
 					else {
@@ -1097,7 +1097,7 @@ namespace Gherkin {
 		auto t = target.begin();
 		for (; s != source.end() && t != target.end(); ++s, ++t) {
 			if (t->getType() == TokenType::Param) {
-				auto key = t->getWstr();
+				auto key = lower(t->getWstr());
 				if (params.count(key) == 0)
 					params.emplace(key, *s);
 				else
@@ -1352,7 +1352,7 @@ namespace Gherkin {
 		auto i = head.tokens.begin();
 		auto j = row.tokens.begin();
 		for (; i != head.tokens.end() && j != row.tokens.end(); ++i, ++j) {
-			auto key = i->getWstr();
+			auto key = lower(i->getWstr());
 			if (params.count(key)) {
 				throw GherkinException("Duplicate param keys");
 			}
