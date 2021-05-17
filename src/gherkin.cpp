@@ -678,7 +678,7 @@ namespace Gherkin {
 			}
 			else {
 				std::wstringstream ss;
-				static const boost::wregex expression(L"\\[[^\\]]*\\]");
+				static const boost::wregex expression(L"\\[[^\\]]+\\]");
 				std::wstring::const_iterator start = wstr.begin();
 				std::wstring::const_iterator end = wstr.end();
 				boost::match_results<std::wstring::const_iterator> what;
