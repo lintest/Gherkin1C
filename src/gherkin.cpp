@@ -552,7 +552,7 @@ namespace Gherkin {
 		transform(type.begin(), type.end(), type.begin(), tolower);
 		static std::map<std::string, KeywordType> types{
 			{ "background", KeywordType::Background },
-			{ "hyperlinks", KeywordType::Hyperlinks },
+			{ "variables", KeywordType::Variables },
 			{ "examples", KeywordType::Examples },
 			{ "feature", KeywordType::Feature },
 			{ "scenario", KeywordType::Scenario },
@@ -1327,6 +1327,25 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinVariables::GherkinVariables(GherkinLexer& lexer, const GherkinLine& line)
+		: AbsractDefinition(lexer, line)
+	{
+	}
+
+	GherkinElement* GherkinVariables::push(GherkinLexer& lexer, const GherkinLine& line)
+	{
+		description.emplace_back(line);
+		return nullptr;
+	}
+
+	GherkinVariables::operator JSON() const
+	{
+		JSON json = AbsractDefinition::operator JSON();
+		json["keyword"] = keyword;
+		set(json, "description", description);
+		return json;
+	}
+
 	GherkinDefinition::GherkinDefinition(GherkinLexer& lexer, const GherkinLine& line)
 		: AbsractDefinition(lexer, line), tokens(line.getTokens()), snippet(::snippet(tokens))
 	{
@@ -1657,10 +1676,17 @@ namespace Gherkin {
 				error(line, "Unknown keyword type");
 		}
 		else {
-			GherkinDefinition* def =
-				line.getKeyword()->getType() == KeywordType::Feature
-				? (GherkinDefinition*) new GherkinFeature(lexer, line)
-				: new GherkinDefinition(lexer, line);
+			GherkinDefinition* def = nullptr;
+			switch (line.getKeyword()->getType()) {
+			case KeywordType::Feature: 
+				def = (GherkinDefinition*) new GherkinFeature(lexer, line);
+				break;
+			case KeywordType::Variables:
+				def = (GherkinDefinition*) new GherkinVariables(lexer, line);
+				break;
+			default:
+				def = (GherkinDefinition*) new GherkinDefinition(lexer, line);
+			}
 			definition.reset(def);
 			resetElementStack(lexer, *def);
 		}
@@ -1794,11 +1820,11 @@ namespace Gherkin {
 			case KeywordType::Feature:
 				setDefinition(feature, lexer, line);
 				break;
+			case KeywordType::Variables:
+				setDefinition(variables, lexer, line);
+				break;
 			case KeywordType::Background:
 				setDefinition(background, lexer, line);
-				break;
-			case KeywordType::Hyperlinks:
-				setDefinition(hyperlinks, lexer, line);
 				break;
 			case KeywordType::Scenario:
 			case KeywordType::ScenarioOutline:
@@ -1932,8 +1958,8 @@ namespace Gherkin {
 					return JSON();
 			}
 			set(json, "feature", feature);
+			set(json, "variables", variables);
 			set(json, "background", background);
-			set(json, "hyperlinks", hyperlinks);
 			set(json, "errors", errors);
 		}
 		catch (const std::exception& e) {

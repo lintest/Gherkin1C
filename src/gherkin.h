@@ -36,8 +36,8 @@ namespace Gherkin {
 
 	enum class KeywordType {
 		Feature,
+		Variables,
 		Background,
-		Hyperlinks,
 		Scenario,
 		ScenarioOutline,
 		Examples,
@@ -349,6 +349,16 @@ namespace Gherkin {
 		virtual operator JSON() const override;
 	};
 
+	class GherkinVariables
+		: public AbsractDefinition {
+	private:
+		StringLines description;
+	public:
+		GherkinVariables(GherkinLexer& lexer, const GherkinLine& line);
+		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
+		virtual operator JSON() const override;
+	};
+
 	class GherkinDefinition
 		: public AbsractDefinition {
 	protected:
@@ -420,8 +430,8 @@ namespace Gherkin {
 		GherkinProvider& provider;
 		std::string language;
 		AbsractDef feature;
+		AbsractDef variables;
 		AbsractDef background;
-		AbsractDef hyperlinks;
 		std::vector<GherkinDef> scenarios;
 		std::vector<GherkinError> errors;
 	private:
