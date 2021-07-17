@@ -28,7 +28,6 @@ namespace Gherkin {
 		Param,
 		Table,
 		Line,
-		Text,
 		Date,
 		Tag,
 		None
@@ -249,6 +248,23 @@ namespace Gherkin {
 		operator JSON() const;
 	};
 
+	class GherkinVariable {
+	private:
+		std::string name;
+		std::string text;
+		const size_t lineNumber;
+		std::unique_ptr<GherkinToken> value;
+		std::unique_ptr<GherkinTable> table;
+		std::unique_ptr<GherkinMultiline> lines;
+	public:
+		GherkinVariable() : lineNumber(0) {}
+		GherkinVariable(const GherkinLine& line);
+		GherkinVariable(const GherkinVariable& src);
+		GherkinTable* pushTable(const GherkinLine& line);
+		GherkinMultiline* pushMultiline(const GherkinLine& line);
+		operator JSON() const;
+	};
+
 	class GeneratedScript {
 	private:
 		GherkinTokens tokens;
@@ -283,8 +299,8 @@ namespace Gherkin {
 		GherkinElement(const GherkinElement& src, const GherkinParams& params);
 		virtual void generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line);
-		GherkinTable* pushTable(const GherkinLine& line);
-		GherkinMultiline* pushMultiline(const GherkinLine& line);
+		virtual GherkinTable* pushTable(const GherkinLine& line);
+		virtual GherkinMultiline* pushMultiline(const GherkinLine& line);
 		virtual void replace(GherkinTables& tabs, GherkinMultilines& mlns);
 		const StringLines& getTags() const { return tags; }
 		const GherkinTables& getTables() const { return tables; }
@@ -352,10 +368,13 @@ namespace Gherkin {
 	class GherkinVariables
 		: public AbsractDefinition {
 	private:
-		StringLines description;
+		std::unique_ptr<GherkinVariable> current;
+		std::vector<GherkinVariable> variables;
 	public:
 		GherkinVariables(GherkinLexer& lexer, const GherkinLine& line);
 		virtual GherkinElement* push(GherkinLexer& lexer, const GherkinLine& line) override;
+		virtual GherkinTable* pushTable(const GherkinLine& line) override;
+		virtual GherkinMultiline* pushMultiline(const GherkinLine& line) override;
 		virtual operator JSON() const override;
 	};
 

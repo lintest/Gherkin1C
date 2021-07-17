@@ -746,7 +746,7 @@ namespace Gherkin {
 		return numb * sign;
 	}
 
-	static JSON str2num(const std::string &text) {
+	static JSON str2num(const std::string& text) {
 		int64_t numb = 0, sign = 1;
 		for (auto it = text.begin(); it != text.end(); ++it) {
 			switch (*it) {
@@ -800,7 +800,6 @@ namespace Gherkin {
 		case TokenType::Table: return "Table";
 		case TokenType::Line: return "Line";
 		case TokenType::Date: return "Date";
-		case TokenType::Text: return "Text";
 		case TokenType::Tag: return "Tag";
 		case TokenType::Symbol: return "Symbol";
 		case TokenType::Multiline: return "Multiline";
@@ -1327,6 +1326,63 @@ namespace Gherkin {
 		return json;
 	}
 
+	GherkinVariable::GherkinVariable(const GherkinVariable& src)
+		: lineNumber(src.lineNumber), name(src.name), text(src.text)
+	{
+		if (src.value) value.reset(new GherkinToken(*src.value.get()));
+		if (src.table) table.reset(new GherkinTable(*src.table.get()));
+		if (src.lines) lines.reset(new GherkinMultiline(*src.lines.get()));
+	}
+
+	GherkinVariable::GherkinVariable(const GherkinLine& line)
+		: lineNumber(line.lineNumber), text(line.text)
+	{
+		auto& tokens = line.getTokens();
+		if (tokens.size() > 1
+			&& tokens[0].getText() == "*"
+			&& tokens[0].getType() == TokenType::Symbol
+			&& tokens[1].getType() == TokenType::Operator) {
+			name = tokens[1].getText();
+		}
+		if (tokens.size() > 1
+			&& tokens[1].getText() == "="
+			&& tokens[1].getType() == TokenType::Symbol
+			&& tokens[0].getType() == TokenType::Operator) {
+			name = tokens[0].getText();
+			if (tokens.size() > 2) {
+				if (tokens[2].getType() == TokenType::Number
+					|| tokens[2].getType() == TokenType::Date
+					|| tokens[2].getType() == TokenType::Param) {
+					value.reset(new GherkinToken(tokens[2]));
+				}
+			}
+		}
+	}
+
+	GherkinTable* GherkinVariable::pushTable(const GherkinLine& line)
+	{
+		table.reset(new GherkinTable(line));
+		return table.get();
+	}
+
+	GherkinMultiline* GherkinVariable::pushMultiline(const GherkinLine& line)
+	{
+		lines.reset(new GherkinMultiline(line));
+		return lines.get();
+	}
+
+	GherkinVariable::operator JSON() const
+	{
+		JSON json;
+		set(json, "line", lineNumber);
+		set(json, "name", name);
+		set(json, "text", text);
+		set(json, "value", value);
+		set(json, "table", table);
+		set(json, "lines", lines);
+		return json;
+	}
+
 	GherkinVariables::GherkinVariables(GherkinLexer& lexer, const GherkinLine& line)
 		: AbsractDefinition(lexer, line)
 	{
@@ -1334,15 +1390,61 @@ namespace Gherkin {
 
 	GherkinElement* GherkinVariables::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
-		description.emplace_back(line);
+		auto& tokens = line.getTokens();
+		if (tokens.size() > 1
+			&& tokens[0].getText() == "*"
+			&& tokens[0].getType() == TokenType::Symbol
+			&& tokens[1].getType() == TokenType::Operator) {
+			current.reset(new GherkinVariable(line));
+			return nullptr;
+		}
+		if (tokens.size() > 1
+			&& tokens[1].getText() == "="
+			&& tokens[1].getType() == TokenType::Symbol
+			&& tokens[0].getType() == TokenType::Operator) {
+			if (tokens.size() == 2) {
+				current.reset(new GherkinVariable(line));
+				return nullptr;
+			}
+			if (tokens[2].getType() == TokenType::Comment) {
+				current.reset(new GherkinVariable(line));
+				return nullptr;
+			}
+			if (tokens[2].getType() == TokenType::Number
+				|| tokens[2].getType() == TokenType::Date
+				|| tokens[2].getType() == TokenType::Param) {
+				variables.emplace_back(line);
+				return nullptr;
+			}
+			return nullptr;
+		}
 		return nullptr;
+	}
+
+	GherkinTable* GherkinVariables::pushTable(const GherkinLine& line)
+	{
+		std::unique_ptr<GherkinVariable> var(current.release());
+		if (!var) var.reset(new GherkinVariable());
+		variables.emplace_back(*var.get());
+		return variables.back().pushTable(line);
+	}
+
+	GherkinMultiline* GherkinVariables::pushMultiline(const GherkinLine& line)
+	{
+		std::unique_ptr<GherkinVariable> var(current.release());
+		if (!var) current.reset(new GherkinVariable());
+		variables.emplace_back(*var.get());
+		return variables.back().pushMultiline(line);
 	}
 
 	GherkinVariables::operator JSON() const
 	{
 		JSON json = AbsractDefinition::operator JSON();
-		json["keyword"] = keyword;
-		set(json, "description", description);
+		set(json, "name", name);
+		set(json, "keyword", keyword);
+		for (auto& value : variables)
+			json["variables"].push_back(value);
+
 		return json;
 	}
 
@@ -1678,7 +1780,7 @@ namespace Gherkin {
 		else {
 			GherkinDefinition* def = nullptr;
 			switch (line.getKeyword()->getType()) {
-			case KeywordType::Feature: 
+			case KeywordType::Feature:
 				def = (GherkinDefinition*) new GherkinFeature(lexer, line);
 				break;
 			case KeywordType::Variables:
