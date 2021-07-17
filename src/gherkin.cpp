@@ -1338,24 +1338,28 @@ namespace Gherkin {
 		: lineNumber(line.lineNumber), text(line.text)
 	{
 		auto& tokens = line.getTokens();
-		if (tokens.size() > 1
-			&& tokens[0].getText() == "*"
-			&& tokens[0].getType() == TokenType::Symbol
-			&& tokens[1].getType() == TokenType::Operator) {
-			name = tokens[1].getText();
-		}
-		if (tokens.size() > 1
-			&& tokens[1].getText() == "="
-			&& tokens[1].getType() == TokenType::Symbol
-			&& tokens[0].getType() == TokenType::Operator) {
+		switch (line.getType()) {
+		case TokenType::Asterisk:
 			name = tokens[0].getText();
-			if (tokens.size() > 2) {
-				if (tokens[2].getType() == TokenType::Number
-					|| tokens[2].getType() == TokenType::Date
-					|| tokens[2].getType() == TokenType::Param) {
+			break;
+		case TokenType::Keyword:
+		case TokenType::Operator:
+			if (tokens.size() > 1) {
+				name = tokens[0].getText();
+			}
+			if (tokens.size() > 2
+				&& tokens[1].getText() == "="
+				&& tokens[1].getType() == TokenType::Symbol) {
+				switch (tokens[2].getType()) {
+				case TokenType::Param:
+				case TokenType::Number:
+				case TokenType::Date:
 					value.reset(new GherkinToken(tokens[2]));
 				}
 			}
+			break;
+		default:
+			throw GherkinException("Wrong variable definition");
 		}
 	}
 
@@ -1391,34 +1395,32 @@ namespace Gherkin {
 	GherkinElement* GherkinVariables::push(GherkinLexer& lexer, const GherkinLine& line)
 	{
 		auto& tokens = line.getTokens();
-		if (tokens.size() > 1
-			&& tokens[0].getText() == "*"
-			&& tokens[0].getType() == TokenType::Symbol
-			&& tokens[1].getType() == TokenType::Operator) {
+		switch (line.getType()) {
+		case TokenType::Asterisk:
 			current.reset(new GherkinVariable(line));
 			return nullptr;
-		}
-		if (tokens.size() > 1
-			&& tokens[1].getText() == "="
-			&& tokens[1].getType() == TokenType::Symbol
-			&& tokens[0].getType() == TokenType::Operator) {
+		case TokenType::Keyword:
+		case TokenType::Operator:
 			if (tokens.size() == 2) {
 				current.reset(new GherkinVariable(line));
 				return nullptr;
 			}
-			if (tokens[2].getType() == TokenType::Comment) {
-				current.reset(new GherkinVariable(line));
-				return nullptr;
+			if (tokens.size() > 2
+				&& tokens[1].getText() == "="
+				&& tokens[1].getType() == TokenType::Symbol) {
+				switch (tokens[2].getType()) {
+				case TokenType::Param:
+				case TokenType::Number:
+				case TokenType::Date:
+					variables.emplace_back(line);
+					return nullptr;
+				case TokenType::Comment:
+					current.reset(new GherkinVariable(line));
+					return nullptr;
+				}
 			}
-			if (tokens[2].getType() == TokenType::Number
-				|| tokens[2].getType() == TokenType::Date
-				|| tokens[2].getType() == TokenType::Param) {
-				variables.emplace_back(line);
-				return nullptr;
-			}
-			return nullptr;
 		}
-		return nullptr;
+		throw GherkinException("Wrong variable definition");
 	}
 
 	GherkinTable* GherkinVariables::pushTable(const GherkinLine& line)
@@ -1442,9 +1444,7 @@ namespace Gherkin {
 		JSON json = AbsractDefinition::operator JSON();
 		set(json, "name", name);
 		set(json, "keyword", keyword);
-		for (auto& value : variables)
-			json["variables"].push_back(value);
-
+		set(json, "items", variables);
 		return json;
 	}
 
