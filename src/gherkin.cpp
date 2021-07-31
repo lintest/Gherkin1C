@@ -316,26 +316,38 @@ namespace Gherkin {
 		remove(snippets, path);
 	}
 
+	JSON to_json(const std::pair<std::wstring, VariablesFile>& pair) {
+		return JSON({
+			{"name", WC2MB(pair.first)},
+			{"path", WC2MB(pair.second.filepath.wstring())},
+			{"items", pair.second.variables}
+			});
+	}
+
 	std::string GherkinProvider::GetVariables(const std::string& text) const
 	{
-		if (text.empty())
-			return JSON(variables).dump();
+		JSON json;
+		if (text.empty()) {
+			JSON json;
+			for (auto& var : variables) {
+				json.push_back(to_json(var));
+			}
+		}
 		else {
-			JSON json, names;
 			try {
-				names = JSON::parse(text);
+				JSON names = JSON::parse(text);
 				for (auto& name : names) {
 					auto key = lower(MB2WC(name));
 					auto it = variables.find(key);
 					if (it != variables.end())
-						json.push_back(*it);
+						json.push_back(to_json(*it));
 				}
 			}
 			catch (std::exception& e) {
 				json["error"] = e.what();
 			}
-			return json;
 		}
+		return json.dump();
 	}
 
 	std::string GherkinProvider::GetCashe() const
