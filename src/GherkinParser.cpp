@@ -19,6 +19,10 @@ GherkinParser::GherkinParser()
 		[&](VH value) { this->provider->escapedCharacters = (std::wstring)value; }
 	);
 
+	AddProperty(u"Variables", u"Переменные",
+		[&](VH value) { value = this->provider->GetVariables(); }
+	);
+
 	AddFunction(u"Parse", u"Прочитать",
 		[&](VH data) { this->result = this->provider->ParseText(data); }
 	);

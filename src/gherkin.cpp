@@ -316,6 +316,11 @@ namespace Gherkin {
 		remove(snippets, path);
 	}
 
+	std::string GherkinProvider::GetVariables() const
+	{
+		return JSON(variables).dump();
+	}
+
 	std::string GherkinProvider::GetCashe() const
 	{
 		JSON json;

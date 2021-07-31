@@ -130,6 +130,7 @@ namespace Gherkin {
 		std::string ParseText(const std::string& text);
 		void ClearCashe(const BoostPath& path);
 		void AbortScan() { ++identifier; };
+		std::string GetVariables() const;
 		std::string GetCashe() const;
 	};
 
