@@ -20,7 +20,7 @@ GherkinParser::GherkinParser()
 	);
 
 	AddProperty(u"Variables", u"Переменные",
-		[&](VH value) { value = this->provider->GetVariables(); }
+		[&](VH value) { value = this->provider->GetVariables({}); }
 	);
 
 	AddFunction(u"Parse", u"Прочитать",
@@ -32,12 +32,16 @@ GherkinParser::GherkinParser()
 	);
 
 	AddFunction(u"ParseFolder", u"ПрочитатьПапку",
-		[&](VH dirs, VH libs, VH filter) { this->result = this->provider->ParseFolder(dirs, libs, filter); }, 
+		[&](VH dirs, VH libs, VH filter) { this->result = this->provider->ParseFolder(dirs, libs, filter); },
 		{ {1, u"[]"}, {2, u""} }
 	);
 
 	AddFunction(u"ParseFile", u"ПрочитатьФайл",
 		[&](VH file, VH libs) { this->result = this->provider->ParseFile(file, libs); }, { {1, u"[]"} }
+	);
+
+	AddFunction(u"GetVariables", u"ПолучитьПеременные",
+		[&](VH value) { value = this->provider->GetVariables(value); }, { {0, u"[]"} }
 	);
 
 	AddFunction(u"GetCashe", u"ПолучитьКэш",

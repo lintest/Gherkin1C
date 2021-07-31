@@ -100,7 +100,7 @@ namespace Gherkin {
 			friend class GherkinProvider;
 			friend class GherkinKeyword;
 		public:
-			Keyword(KeywordType type, const std::string &name, const std::string& text);
+			Keyword(KeywordType type, const std::string& name, const std::string& text);
 			GherkinKeyword* match(GherkinTokens& tokens) const;
 			bool comp(const Keyword& other) const {
 				return words.size() > other.words.size();
@@ -130,7 +130,7 @@ namespace Gherkin {
 		std::string ParseText(const std::string& text);
 		void ClearCashe(const BoostPath& path);
 		void AbortScan() { ++identifier; };
-		std::string GetVariables() const;
+		std::string GetVariables(const std::string& text) const;
 		std::string GetCashe() const;
 	};
 

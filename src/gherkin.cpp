@@ -316,9 +316,26 @@ namespace Gherkin {
 		remove(snippets, path);
 	}
 
-	std::string GherkinProvider::GetVariables() const
+	std::string GherkinProvider::GetVariables(const std::string& text) const
 	{
-		return JSON(variables).dump();
+		if (text.empty())
+			return JSON(variables).dump();
+		else {
+			JSON json, names;
+			try {
+				names = JSON::parse(text);
+				for (auto& name : names) {
+					auto key = lower(MB2WC(name));
+					auto it = variables.find(key);
+					if (it != variables.end())
+						json.push_back(*it);
+				}
+			}
+			catch (std::exception& e) {
+				json["error"] = e.what();
+			}
+			return json;
+		}
 	}
 
 	std::string GherkinProvider::GetCashe() const
