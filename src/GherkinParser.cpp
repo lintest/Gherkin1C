@@ -41,7 +41,7 @@ GherkinParser::GherkinParser()
 	);
 
 	AddFunction(u"GetVariables", u"ПолучитьПеременные",
-		[&](VH value) { value = this->provider->GetVariables(value); }, { {0, u"[]"} }
+		[&](VH value) { this->result = this->provider->GetVariables(value); }, { {0, u""} }
 	);
 
 	AddFunction(u"GetCashe", u"ПолучитьКэш",

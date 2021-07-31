@@ -327,12 +327,9 @@ namespace Gherkin {
 	std::string GherkinProvider::GetVariables(const std::string& text) const
 	{
 		JSON json;
-		if (text.empty()) {
-			JSON json;
-			for (auto& var : variables) {
+		if (text.empty())
+			for (auto& var : variables)
 				json.push_back(to_json(var));
-			}
-		}
 		else {
 			try {
 				JSON names = JSON::parse(text);
