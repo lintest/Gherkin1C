@@ -41,7 +41,7 @@ GherkinParser::GherkinParser()
 	);
 
 	AddProcedure(u"ClearCashe", u"ОчиститьКэш",
-		[&](VH filename) { this->provider->ClearSnippets((std::wstring)filename); }, { {0, u""} }
+		[&](VH filename) { this->provider->ClearCashe((std::wstring)filename); }, { {0, u""} }
 	);
 
 	AddProcedure(u"Exit", u"ЗавершитьРаботуСистемы",

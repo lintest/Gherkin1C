@@ -284,10 +284,26 @@ namespace Gherkin {
 		return nullptr;
 	}
 
-	void GherkinProvider::ClearSnippets(const BoostPath& path)
+	template<typename T, typename V>
+	void remove(T& cache, const V& key) {
+		bool exists = true;
+		while (exists) {
+			exists = false;
+			for (auto it = cache.begin(); it != cache.end(); ++it) {
+				if (it->second.filepath == key) {
+					cache.erase(it);
+					exists = true;
+					break;
+				}
+			}
+		}
+	}
+
+	void GherkinProvider::ClearCashe(const BoostPath& path)
 	{
 		if (path.empty()) {
 			fileCache.clear();
+			variables.clear();
 			snippets.clear();
 			return;
 		}
@@ -296,17 +312,8 @@ namespace Gherkin {
 		if (it != fileCache.end())
 			fileCache.erase(it);
 
-		bool exists = true;
-		while (exists) {
-			exists = false;
-			for (auto it = snippets.begin(); it != snippets.end(); ++it) {
-				if (it->second.filepath == path) {
-					snippets.erase(it);
-					exists = true;
-					break;
-				}
-			}
-		}
+		remove(variables, path);
+		remove(snippets, path);
 	}
 
 	std::string GherkinProvider::GetCashe() const
@@ -314,6 +321,7 @@ namespace Gherkin {
 		JSON json;
 		set(json, "files", fileCache);
 		set(json, "snippets", snippets);
+		set(json, "variables", variables);
 		return json.dump();
 	}
 
@@ -384,6 +392,7 @@ namespace Gherkin {
 				time = boost::filesystem::last_write_time(path);
 				if (time == info.second) return;
 			}
+			ClearCashe(path);
 			if (time == 0) time = boost::filesystem::last_write_time(path);
 			auto doc = std::make_unique<GherkinDocument>(*this, path);
 			doc->getExportSnippets(snippets);
@@ -1389,6 +1398,14 @@ namespace Gherkin {
 		return json;
 	}
 
+	VariablesFile::operator JSON() const
+	{
+		JSON json;
+		set(json, "path", filepath);
+		set(json, "items", variables);
+		return json;
+	}
+
 	GherkinImport::GherkinImport(const GherkinLine& line)
 		: lineNumber(line.lineNumber), text(line.text)
 	{
@@ -1412,8 +1429,8 @@ namespace Gherkin {
 
 		auto it = cache.find(lower(filename));
 		if (it != cache.end()) {
-			set(json, "path", it->second.first.wstring());
-			set(json, "items", it->second.second);
+			set(json, "path", it->second.filepath.wstring());
+			set(json, "items", it->second.variables);
 		}
 
 		return json;
@@ -2045,7 +2062,6 @@ namespace Gherkin {
 
 	void GherkinDocument::getExportSnippets(ScenarioMap& snippets) const
 	{
-		provider.ClearSnippets(filepath);
 		bool all = hasExportSnippets(getTags());
 		for (auto& def : scenarios) {
 			if (all || hasExportSnippets(def->getTags())) {
@@ -2064,7 +2080,7 @@ namespace Gherkin {
 			auto filename = lower(filepath.filename().wstring());
 			auto it = cache.find(filename);
 			if (it != cache.end()) cache.erase(filename);
-			cache.emplace(filename, std::make_pair(filepath, vars->variables));
+			cache.emplace(filename, VariablesFile(filepath, vars->variables));
 		}
 	}
 
