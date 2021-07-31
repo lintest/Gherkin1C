@@ -1412,7 +1412,7 @@ namespace Gherkin {
 
 		auto it = cache.find(lower(filename));
 		if (it != cache.end()) {
-			set(json, "path", it->second.first.c_str());
+			set(json, "path", it->second.first.wstring());
 			set(json, "items", it->second.second);
 		}
 
