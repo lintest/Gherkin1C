@@ -1432,7 +1432,7 @@ namespace Gherkin {
 	VariablesFile::operator JSON() const
 	{
 		JSON json;
-		set(json, "path", filepath);
+		set(json, "path", filepath.string());
 		set(json, "items", variables);
 		return json;
 	}
