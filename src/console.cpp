@@ -100,7 +100,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 		provider.setKeywords(json);
 	}
 	else {
-		std::string json = R"({"en": {"simple": ["Then", "And", "Scenario Template"]}})";
+		std::string json = R"({"en": {"simple": ["And"], "feature": ["feature"], "scenario": ["scenario"]}})";
 		provider.setKeywords(json);
 	}
 

@@ -780,7 +780,7 @@ namespace Gherkin {
 		return os;
 	}
 
-	static JSON str2dec(const std::string& text, double numb, double sign) {
+	static double str2dec(const std::string& text, double numb, double sign) {
 		double mult = 0.1;
 		for (auto it = text.begin(); it != text.end(); ++it) {
 			numb += (*it - '0') * mult;
@@ -789,10 +789,12 @@ namespace Gherkin {
 		return numb * sign;
 	}
 
-	static JSON str2num(const std::string& text) {
+	static double str2num(const std::string& text) {
 		int64_t numb = 0, sign = 1;
 		for (auto it = text.begin(); it != text.end(); ++it) {
 			switch (*it) {
+			case '+':
+				break;
 			case '-':
 				sign = -1;
 				break;
@@ -815,7 +817,9 @@ namespace Gherkin {
 
 		if (type == TokenType::Number) {
 			try {
-				json["text"] = str2num(text);
+				double number = str2num(text);
+				std::pair<double, std::string> data(number, text);
+				json["text"] = JSON(data);
 			}
 			catch (std::exception& e) {
 				json["error"] = e.what();
