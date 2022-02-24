@@ -17,6 +17,8 @@ std::u16string lower(const std::u16string& str);
 std::wstring upper(const std::wstring& str);
 std::wstring lower(const std::wstring& str);
 
+extern std::locale locale_ru;
+
 #include "json.hpp"
 using JSON = nlohmann::json;
 

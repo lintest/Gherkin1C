@@ -898,12 +898,23 @@ namespace Gherkin {
 		std::wstringstream ss;
 		for (auto& token : tokens) {
 			switch (token.getType()) {
-			case TokenType::Operator:
-				ss << lower(token.getWstr());
-				break;
-			case TokenType::Symbol:
-				if (token.getText() == "-") ss << L'_';
-				break;
+				case TokenType::Operator: {
+					auto wstr = token.getWstr();
+					for (auto& ch : wstr) {
+						switch (ch) {
+							case L'.':
+								break;
+							case L'-':
+								ss << L'_';
+								break;
+							default:
+								ss << std::tolower(ch, locale_ru);
+						}
+					}
+				} break;
+				case TokenType::Symbol: {
+					if (token.getText() == "-") ss << L'_';
+				} break;
 			}
 		}
 		return ss.str();
