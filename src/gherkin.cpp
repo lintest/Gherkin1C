@@ -214,10 +214,21 @@ namespace Gherkin {
 		}
 	}
 
+	bool GherkinProvider::Keyword::isTopLevel() const
+	{
+		switch (type) {
+		case KeywordType::Import:
+		case KeywordType::Step:
+		case KeywordType::None:
+			return false;
+		default:
+			return true;
+		}
+	}
+
 	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens) const
 	{
-		bool toplevel = type != KeywordType::Step;
-
+		bool toplevel = isTopLevel();
 		size_t count = words.size();
 		if (tokens.size() < count + (toplevel ? 1 : 0))
 			return nullptr;
