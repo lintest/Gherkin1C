@@ -216,10 +216,16 @@ namespace Gherkin {
 
 	GherkinKeyword* GherkinProvider::Keyword::match(GherkinTokens& tokens) const
 	{
-		if (words.size() > tokens.size())
+		bool toplevel = type != KeywordType::Step;
+
+		size_t count = words.size();
+		if (tokens.size() < count + (toplevel ? 1 : 0))
 			return nullptr;
 
-		for (size_t i = 0; i < words.size(); ++i) {
+		if (toplevel && tokens[count].type != TokenType::Colon)
+			return nullptr;
+
+		for (size_t i = 0; i < count; ++i) {
 			if (tokens[i].type != TokenType::Operator)
 				return nullptr;
 
@@ -227,18 +233,8 @@ namespace Gherkin {
 				return nullptr;
 		}
 
-		bool toplevel = false;
-		size_t keynum = words.end() - words.begin();
-		for (auto& t : tokens) {
-			if (keynum > 0) {
-				t.type = TokenType::Keyword;
-				keynum--;
-			}
-			else {
-				if (t.type == TokenType::Colon)
-					toplevel = true;
-				break;
-			}
+		for (size_t i = 0; i < count; ++i) {
+			tokens[i].type = TokenType::Keyword;
 		}
 
 		return new GherkinKeyword(*this, toplevel);
