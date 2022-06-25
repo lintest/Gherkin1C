@@ -915,7 +915,6 @@ namespace Gherkin {
 		if (tokens.size() == 0) return nullptr;
 		if (tokens.begin()->type != TokenType::Operator) return nullptr;
 		keyword.reset(document.matchKeyword(tokens));
-		//TODO: check does colon exists for top level keywords: Feature, Background, Scenario...
 		return keyword.get();
 	}
 
