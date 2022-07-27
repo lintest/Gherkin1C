@@ -1222,6 +1222,13 @@ namespace Gherkin {
 		}
 	}
 
+	void GeneratedScript::generate(const GherkinDocument& doc, const ScenarioMap& map, const SnippetStack& stack)
+	{
+		for (auto& step : steps) {
+			step->generate(doc, map, stack);
+		}
+	}
+
 	void GeneratedScript::replace(GherkinTables& tabs, GherkinMultilines& mlns)
 	{
 		for (auto& step : steps) {
@@ -1655,6 +1662,7 @@ namespace Gherkin {
 			for (auto& row : table.body) {
 				auto params = table.params({}, row);
 				row.script.reset(new GeneratedScript(*this, params));
+				row.script->generate(doc, map, stack);
 			}
 		}
 	}
